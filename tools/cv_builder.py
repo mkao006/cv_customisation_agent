@@ -37,12 +37,15 @@ class CVBuilder:
     @staticmethod
     def generate_cv_markdown(cv: OptimizedCV) -> str:
         md = f"# Michael C. J. Kao\n\n## Professional Summary\n{cv.summary}\n\n## Technical Skills\n"
-        for s in cv.skills: md += f"- {s}\n"
+        for s in cv.skills:
+            md += f"- {s}\n"
         md += "\n## Work Experience\n"
         for exp in cv.experience:
             md += f"### {exp.job_title} | {exp.company} | {exp.dates}\n"
-            for b in exp.responsibilities: md += f"- {b}\n"
+            for b in exp.responsibilities:
+                md += f"- {b}\n"
             md += "\n"
         md += "## Education\n"
-        for edu in cv.education: md += f"- **{edu.degree}** | {edu.institution} | {edu.completion_year}\n"
+        for edu in cv.education:
+            md += f"- **{edu.degree}** | {edu.institution} | {edu.completion_year}\n"
         return md

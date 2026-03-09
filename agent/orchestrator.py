@@ -1,11 +1,11 @@
-import os
 import json
+import yaml
+import os
 from typing import Literal
 from langgraph.graph import StateGraph, END
 from agent.models import AgentState, OptimizedCV
 from agent.llm_client import LLMClient
 from tools.job_search import JobSearch
-from tools.cv_parser import CVParser
 from prompts.templates import CV_GENERATION_TEMPLATE
 
 class Orchestrator:
@@ -15,7 +15,7 @@ class Orchestrator:
 
     def _create_workflow(self):
         workflow = StateGraph(AgentState)
-        
+
         # Add Nodes
         workflow.add_node("ingest_inputs", self.ingest_inputs)
         workflow.add_node("validate_jd", self.validate_jd)
@@ -26,11 +26,11 @@ class Orchestrator:
         workflow.add_node("evaluate_research", self.evaluate_research)
         workflow.add_node("synthesize_strategy", self.synthesize_strategy)
         workflow.add_node("generate_cv", self.generate_cv)
-        
+
         # Define Edges
         workflow.set_entry_point("ingest_inputs")
         workflow.add_edge("ingest_inputs", "validate_jd")
-        
+
         # 1. JD Validation -> END or Hub
         workflow.add_conditional_edges(
             "validate_jd",
@@ -40,17 +40,17 @@ class Orchestrator:
                 "invalid": END
             }
         )
-        
+
         # 2. Hub -> Parallel Research (Fan-out)
         workflow.add_edge("research_hub", "research_company")
         workflow.add_edge("research_hub", "research_best_practices")
         workflow.add_edge("research_hub", "research_competitors")
-        
+
         # 3. Parallel Research -> Evaluate (Fan-in)
         workflow.add_edge("research_company", "evaluate_research")
         workflow.add_edge("research_best_practices", "evaluate_research")
         workflow.add_edge("research_competitors", "evaluate_research")
-        
+
         # 4. Evaluation -> END or Strategy or Hub (Loop)
         workflow.add_conditional_edges(
             "evaluate_research",
@@ -61,10 +61,10 @@ class Orchestrator:
                 "max_iterations_reached": "synthesize_strategy"
             }
         )
-        
+
         workflow.add_edge("synthesize_strategy", "generate_cv")
         workflow.add_edge("generate_cv", END)
-        
+
         return workflow.compile()
 
     # --- Node Logic ---
@@ -73,10 +73,19 @@ class Orchestrator:
         print("--- Ingesting Inputs ---")
         try:
             jd_text = JobSearch.get_text_from_jd(state["jd_source"])
-            cv_text = CVParser.extract_text(state["original_cv"])
+
+            # Directly load YAML if it's a YAML file, else treat as raw text or path
+            cv_source = state["original_cv"]
+            if os.path.exists(cv_source) and (cv_source.endswith(".yaml") or cv_source.endswith(".yml")):
+                with open(cv_source, "r") as f:
+                    data = yaml.safe_load(f)
+                    cv_text = yaml.dump(data, default_flow_style=False)
+            else:
+                cv_text = cv_source
+
             return {
-                "jd_text": jd_text, 
-                "original_cv": cv_text, 
+                "jd_text": jd_text,
+                "original_cv": cv_text,
                 "jd_validation_error": None,
                 "research_iteration": 0,
                 "max_research_iterations": 1,
@@ -100,12 +109,12 @@ class Orchestrator:
 
         prompt = f"Does the following text appear to be a job description? Respond with 'YES' or 'NO' and a brief reason why.\n\nTEXT:\n{jd_text[:1000]}"
         response = self.llm_client.invoke_llm(prompt)
-        
+
         if "YES" not in response.upper():
             error_msg = f"Content does not appear to be a valid Job Description. Reason: {response}"
             print(f"Aborting: {error_msg}")
             return {"jd_validation_error": error_msg}
-        
+
         print("JD Validation Successful.")
         return {"jd_validation_error": None}
 
@@ -147,12 +156,12 @@ class Orchestrator:
         print("--- Evaluating Combined Research ---")
         prompt = f"""
         Review the following combined research for the JD: {state['jd_text'][:500]}
-        
+
         COMPANY: {state['company_research'][:800]}
         BEST PRACTICES: {state['best_practices_research'][:800]}
         COMPETITORS: {state['competitor_research'][:800]}
-        
-        Evaluate if this is sufficient for a tailored CV. 
+
+        Evaluate if this is sufficient for a tailored CV.
         Identify specific missing details (Gaps) if refinement is needed.
         Return JSON: {{"evaluation": "satisfactory" | "needs_refinement", "gaps": "string"}}
         """
@@ -162,11 +171,11 @@ class Orchestrator:
                 response = response.split("```json")[1].split("```")[0].strip()
             data = json.loads(response)
             return {
-                "research_evaluation": data["evaluation"], 
+                "research_evaluation": data["evaluation"],
                 "research_gaps": data.get("gaps", ""),
                 "research_iteration": state["research_iteration"] + 1
             }
-        except:
+        except Exception:
             return {"research_evaluation": "satisfactory", "research_iteration": state["research_iteration"] + 1}
 
     def route_after_evaluation(self, state: AgentState) -> Literal["loop_to_research", "satisfactory", "max_iterations_reached"]:
@@ -175,7 +184,7 @@ class Orchestrator:
         if state["research_iteration"] >= state["max_research_iterations"]:
             print("--- Max research iterations reached. Proceeding with current data. ---")
             return "max_iterations_reached"
-        
+
         print(f"--- Gaps identified: {state['research_gaps']}. Looping back... ---")
         return "loop_to_research"
 

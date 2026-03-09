@@ -8,7 +8,7 @@ from tools.cv_builder import CVBuilder
 
 def main():
     parser = argparse.ArgumentParser(description="AI Job Research & CV Tailoring Agent")
-    parser.add_argument("--cv", default="cv_simple.pdf", help="Path to original CV")
+    parser.add_argument("--cv", default="data/base_cv/master_cv.yaml", help="Path to original CV")
     parser.add_argument("--jd", default="https://jobs.apple.com/en-us/details/200638600-3278/machine-learning-engineer-data-solutions-initiatives", help="JD URL or path")
     parser.add_argument("--model", help="Gemini model version")
     parser.add_argument("--pdf", help="Render an existing Markdown file to PDF")
