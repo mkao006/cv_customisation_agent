@@ -7,6 +7,9 @@ lint:
 format:
 	uv run ruff format .
 
+test:
+	uv run python -m unittest discover tests
+
 ## Remove all build, test, coverage and Python artifacts
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
