@@ -46,9 +46,9 @@ python main.py --cv data/base_cv/master_cv.yaml --jd "https://company.com/job-ur
 ### Command Line Options
 | Argument | Description | Default |
 | :--- | :--- | :--- |
-| `--cv` | Path to your original CV (YAML, PDF, or TXT) | `cv_simple.pdf` |
+| `--cv` | Path to your original CV (YAML, PDF, or TXT) | `data/base_cv/master_cv.yaml` |
 | `--jd` | URL or path to the Job Description | (Apple MLE Job URL) |
-| `--model` | Gemini model to use | `gemini-1.5-flash` |
+| `--model` | Gemini model to use | `gemini-2.5-flash` |
 | `--personalize` | Custom instructions for the LLM | None |
 | `--visualize` | Generate and save the workflow diagram | False |
 | `--pdf` | Render an existing Markdown file to styled PDF | None |
