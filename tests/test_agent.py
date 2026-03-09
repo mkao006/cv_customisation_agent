@@ -1,12 +1,12 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from agent.orchestrator import Orchestrator
 from agent.models import AgentState
 
 class TestAgent(unittest.TestCase):
     def setUp(self):
         # Patch LLMClient to avoid actual API calls
-        with patch('agent.orchestrator.LLMClient') as mock_client:
+        with patch('agent.orchestrator.LLMClient'):
             self.orchestrator = Orchestrator()
             self.mock_llm_client = self.orchestrator.llm_client
 

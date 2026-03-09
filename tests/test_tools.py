@@ -1,5 +1,4 @@
 import unittest
-import os
 from tools.job_search import JobSearch
 from tools.cv_builder import CVBuilder
 from agent.models import OptimizedCV, Experience, Education
