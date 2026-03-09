@@ -5,7 +5,7 @@ An AI-powered multi-agent pipeline built with **LangGraph**, **LangChain**, and 
 ## Features
 - **JD Ingestion**: Supports URLs (web scraping) and local PDF/TXT files.
 - **JD Validation**: Automatically verifies if the source is a valid job description before starting research.
-- **Parallel Intelligence**: Simultaneously researches the Hiring Company, Role Best Practices, and LinkedIn Competitor Profiles.
+- **Parallel Intelligence**: Simultaneously researches the Hiring Company, Role Best Practices, and LinkedIn Competing Candidate Profiles.
 - **Recursive Refinement**: Evaluates research for gaps and loops back to refine data (up to 3 iterations).
 - **ATS-Optimized CV**: Produces a professionally styled PDF and Markdown CV using structured YAML as the "Source of Truth".
 - **Organized Outputs**: Each run is saved in a unique, timestamped directory.

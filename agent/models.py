@@ -25,7 +25,7 @@ class AgentState(TypedDict):
     jd_validation_error: Optional[str]
     company_research: str
     best_practices_research: str
-    competitor_research: str
+    competing_candidates_research: str
     research_iteration: int
     max_research_iterations: int
     research_evaluation: str # 'satisfactory' or 'needs_refinement'
