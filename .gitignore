@@ -1,0 +1,35 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+*.log
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Environment variables
+.env
+.env.*
+
+# Python version
+.python-version
+
+# Data and Outputs (Sensitive or large)
+data/output/
+data/jobs/
+outputs/
+*.pdf
+TAILORED_CV.md
+STRATEGY_REPORT.md
+
+# IDEs
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store

@@ -1,0 +1,144 @@
+name: Michael C. J. Kao
+contact:
+  email: "[Your Email]"
+  location: Singapore
+  linkedin: "[Your LinkedIn]"
+
+personal_summary: |
+  Lead Data Scientist with a deep technical foundation and a commitment to driving measurable business value through AI/ML at scale. 
+  Proven track record of managing the end-to-end ML lifecycle—from complex causal inference to real-time production-scale deployment—delivering 
+  high-impact solutions within the ride-hailing and fintech industries.
+
+technical_skills:
+  languages: ["R", "Python", "Golang", "SQL"]
+  ml_stack: ["DBT", "Airflow", "Flyte", "Mlflow", "Arize", "Spark"]
+  ml_libraries: ["pandas", "numpy", "pytorch", "scikit-learn", "lightgbm", "xgboost"]
+  other: ["Linux", "Docker", "Git", "Databricks", "AWS Sagemaker"]
+
+work_experience:
+  - title: Staff Data Scientist - Growth and Foundation
+    company: Airwallex
+    location: Singapore
+    dates: April 2024 – Present
+    responsibilities:
+      - Built the data and ML foundation and a lead enrichment and scoring system to drive maximum customer conversion.
+
+  - title: Lead Data Scientist
+    company: Gojek
+    location: Singapore
+    dates: June 2021 – April 2024
+    responsibilities:
+      - Matchmaking and Pricing machine learning tech lead, maximising booking completion rate and pricing optimisation.
+
+  - title: Data Scientist
+    company: Envato
+    location: Melbourne, Australia
+    dates: July 2018 – Dec 2020
+    responsibilities:
+      - Driving growth and customer experience with segmentation and ads optimisation.
+
+  - title: Consultant
+    company: FAO of the United Nations
+    location: Remote
+    dates: July 2017 – July 2018
+    responsibilities:
+      - Tech lead for global food availability and hunger prevalence modelling.
+
+  - title: Senior Data Scientist
+    company: Deepblu Inc
+    location: Taipei, Taiwan
+    dates: November 2016 – July 2017
+    responsibilities:
+      - Start up one-man Data Scientist building data foundation and strategy for growth.
+
+  - title: Lead Statistician
+    company: FAO of the United Nations
+    location: Rome, Italy
+    dates: October 2011 – October 2016
+    responsibilities:
+      - Led statistical modelling and data initiatives.
+
+  - title: Data Analyst
+    company: Ogilvy & Mather
+    location: Auckland, New Zealand
+    dates: June 2010 – November 2011
+    responsibilities:
+      - Performed data analysis and campaign tracking.
+
+selected_projects:
+  - name: Lead Scoring
+    year: 2025
+    company: Airwallex
+    description: Spearheaded the development of an in-house ML lead scoring system, significantly reducing lost opportunities and increasing stakeholder buy-in by integrating advanced model explainability.
+    details:
+      - The problem was formulated as an ordianl regression where the prediction is grouped in to 4 tiers, 1 to 4 with Tier 1 being the highest value customer.
+      - The target was created using customer data and we bin the gross profit into each tier based on alignment with the business.
+      - We then train 3 xgboost models, one for each tier, to predict the probability of a lead being greater than each tier, we then average the probability to produce the final score. This is know as the Frank and Hall Method for converting ordinal regression into multiple binary predictions.
+      - The scores are then mapped to the 4 tiers based on the recall and precission aligned with business.
+    tools: ["Python", "DBT", "Airflow", "MLflow", "Spark", "Databricks", "xgboost"]
+    keywords: ["ordinal regression", "supervised learning", "shapley value"]
+  
+  - name: Data enrichment
+    year: 2025
+    company: Airwallex
+    description: Architected a data enrichment system utilizing a Reinforcement Learning (RL) optimized waterfall and LLM, doubling data coverage and significantly reducing missed business opportunities through intelligent data acquisition.
+    details:
+      - Conducted a benchmark across 15 vendors to measure the accuracy and coverage of their data.
+      - Integrated our internal system with four short listed vendor with a waterfall logic to maximise accuracy and coverage.
+      - We use multi arm bandit to optimise the order of the waterfall and perform exploration to shuffle the order to measure the accuracy and coverage without bias.
+      - We use LLM to classify the company to determine whether they are an AI company and the nature of the AI application.
+    tools: ["Python", "LLM", "Databricks", "multi arm bandit"]
+    keywords: ["llm", "multi arm bandit", "data enrichment"]
+
+  - name: Web Instrumentation
+    year: 2024
+    description: Lead a company wide initiative to standardise web tracking across more than a dozen domains and designed the end-to-end data infrastructure to deliver timely and accurate data.
+    details:
+      - Coordinated with more than a dozen team to standardise the architecture for logging front end customer interaction.
+      - Develop guideline and standard for naming events and practices to QA.
+      - Developed the ingestion pipeline and validated the data to ensure the meeting the quality for key decision making.
+    tools: ["Python", "DBT", "Airflow", "Databricks", "GA4"]
+    keywords: ["Google Analytics", "web instrumentation", "data quality", "event tracking", "data governance"]
+
+  - name: ML Model optimisation
+    year: 2023
+    company: Gojek
+    description: Optimised the core driver selection model with weekly experimentation, increasing gross take by more than 1 Million USD.
+    details:
+      - Continuous optimisation of the core matching algorithm by rolling out new experiments every week.
+      - Improved feature engineering, including advanced features such as customer embedding.
+      - Optimised the hyper-parameter of the model and the model ensemble weights.
+    keywords: ["model optimisation", "feature engineering", "embedding", "hyper parameter tuning"]
+
+  - name: Project Efficiency++
+    year: 2023
+    company: Gojek
+    description: Lead the simplification of architecture and infrastructure optimisation, cutting over 80% of infrastructure cost and drastically reducing maintenance effort.
+    details:
+      - Reduced infrastructure cost by reducing training frequency from daily to weekly backed by data analysis.
+      - Consolidated multiple model into a single generalised model to reduce inference cost, cutting down the number of model from 10+ to 1 for each objective.
+    keywords: ["cost reduction", "model consolidation", "architecture optimisation"]
+
+  - name: ML test automation
+    year: 2022
+    description: Introduced behavioural and differential testing for ML models, reducing deployment time from 2 weeks to 2 hours.
+    details:
+      - Introduced behavioural test to test ensure the model behaviour is consistent with the business logic.
+      - Introduced differential test to test the model performance against the previous model and capture unexpected abrupt changes from retraining.
+      - Automate the test suite and integrate with the CI/CD pipeline to shorten development cycle.
+    tools: ["Python"]
+    keywords: ["testing", "behavioural test", "integration test", "differential test", "test automation", "CI/CD pipeline"]
+
+education:
+  - degree: M.Sc. in Statistics
+    institution: University of Auckland
+    dates: 2010 – 2012
+  - degree: B.A. (1st Class Hons.) in Statistics
+    institution: University of Auckland
+    dates: 2009 – 2010
+  - degree: B.A. & B.Sc
+    institution: University of Auckland
+    dates: 2005 – 2009
+
+interests:
+  hobbies: ["Scuba and free diving", "Basketball", "Boxing", "Yoga", "Cooking", "Travelling"]
