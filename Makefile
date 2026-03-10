@@ -10,6 +10,9 @@ format:
 test:
 	uv run python -m unittest discover tests
 
+evaluate:
+	uv run python evaluate.py
+
 ## Remove all build, test, coverage and Python artifacts
 clean:
 	find . -name '*.pyc' -exec rm -f {} +

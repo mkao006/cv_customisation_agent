@@ -1,0 +1,48 @@
+job_title: "Machine Learning Engineer, Data Solutions & Initiatives"
+company: "Apple"
+location: "Singapore"
+role_number: "200638600-3278"
+posted_date: "Dec 23, 2025"
+weekly_hours: 40
+
+summary: |
+  Apple is seeking a highly motivated and innovative Senior Machine Learning Engineer to join our worldwide sales team, Data Solutions & Initiatives (DSI). DSI is a product strategy and engineering team focused on delivering ML and Generative AI agentic pipelines to move forward Apple’s critical financial planning and business activities.
+
+description: |
+  You will be responsible for building a suite of AI / Machine Learning products that deliver measurable business value for Sales and Finance Business community working closely with Data Engineers, Software Engineers and MLOps. You will own the entire AI/ML pipelines from requirement gathering to deployment and monitoring.
+
+key_responsibilities:
+  - Partner with business stakeholders to clarify requirements, use cases and business metrics.
+  - Collaborate with data engineers to establish data pipeline and prepare datasets for model building.
+  - Work with software engineering to plan and execute the integration of the AI ML services.
+  - Engage with business domain experts to understand data characteristics and create features for model training.
+  - Design, build, evaluate and deploy ML models and AI agentic pipelines.
+  - Monitor models performance and implement re-train strategies.
+  - Collaborate with fellow AI/ML colleagues to develop reusable components that scale team delivery.
+  - Track, communicate, and explain the model impact to business stakeholders to drive ROI.
+
+minimum_qualifications:
+  - Bachelor's degree in Computer Science, Machine Learning, or related technical field.
+  - 5+ years of experience in ML Engineering, Software Engineering, or Data Science with focus on production ML systems.
+  - Strong proficiency in Python and SQL.
+  - Solid understanding of ML fundamentals (supervised and unsupervised learning).
+  - Experience building and deploying ML models in production environments.
+  - Familiarity with ML frameworks such as scikit-learn, PyTorch, OpenAI, LangChain/Graph.
+  - Strong software engineering skills (clean, maintainable code).
+  - Experience with cloud platforms (AWS, GCP, or Azure) and basic cloud services.
+  - Excellent problem-solving and analytical skills.
+  - Strong written and verbal communication skills.
+
+preferred_qualifications:
+  - MS or PhD in Computer Science, Machine Learning, or related technical field.
+  - 7+ years of experience with a focus on production ML systems.
+  - Track record with agentic workflows, advanced RAG architectures, and LLM frameworks (OpenAI, LangChain, LlamaIndex).
+  - Expertise in prompt engineering, fine-tuning, LLM evaluation, and vector databases (ElasticSearch, Chroma).
+  - Deep expertise in ML libraries (scikit-learn, PyTorch, XGBoost, LightGBM) and lifecycle management (MLflow, W&B).
+  - Experience with API frameworks (FastAPI, Flask) and monitoring tools (Grafana, Prometheus, LangFuse).
+  - Advanced AWS experience (EKS, S3, Athena, Lambda, SQS, EventBridge) and container orchestration (Kubernetes, Docker).
+  - Proficiency with workflow orchestration (Airflow), streaming (Kafka, Kinesis), and caching (Redis).
+  - Strong foundation in transformer architectures, feature stores, and A/B testing.
+  - Proficiency in compiled languages (Go, Rust, Java, C++) with strong CI/CD practices.
+  - Ability to translate technical concepts for non-technical stakeholders.
+  - Track record mentoring junior engineers.
