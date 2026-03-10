@@ -25,7 +25,7 @@ class CVBuilder:
         </head>
         <body>
             <div class="banner">
-                This document was generated and tailored by a custom AI Research Agent.
+                This document was generated and tailored by a <a href="https://github.com/mkao006/cv_customisation_agent" style="color: #999; text-decoration: none;">custom AI Research Agent</a>.
             </div>
             {html_body}
         </body>
