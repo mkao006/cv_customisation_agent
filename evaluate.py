@@ -2,13 +2,25 @@ import os
 import yaml
 import json
 import glob
+import re
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from agent.orchestrator import Orchestrator
 from agent.llm_client import LLMClient
 
-def evaluate_jd(jd_file, master_cv_path, master_cv_text, orchestrator, llm_client):
-    """Evaluates a single JD against the master CV using semantic matching."""
+def clean_text(text):
+    """Normalize text for better matching."""
+    return re.sub(r'\s+', ' ', str(text).lower()).strip()
+
+def is_exact_match(keyword, master_text):
+    """Check if the keyword exists as a substring in the normalized master text."""
+    kw = clean_text(keyword)
+    # Match whole words or standard phrases
+    pattern = rf"\b{re.escape(kw)}\b"
+    return re.search(pattern, master_text) is not None
+
+def evaluate_jd(jd_file, master_cv_path, master_cv_text, normalized_master, orchestrator, llm_client):
+    """Evaluates a single JD using two independent methods: Exact Match and LLM Judge."""
     jd_filename = os.path.basename(jd_file)
     print(f">> Evaluating JD: {jd_filename}")
     
@@ -28,7 +40,7 @@ def evaluate_jd(jd_file, master_cv_path, master_cv_text, orchestrator, llm_clien
         "best_practices_research": "",
         "competing_candidates_research": "",
         "application_strategy": "",
-        "personalization_instructions": "Focus on strict adherence to the original CV content. Do not add skills or tools I do not have in my master CV.",
+        "personalization_instructions": "Focus on strict adherence to the original CV content.",
         "final_ats_cv": None
     }
     
@@ -40,146 +52,122 @@ def evaluate_jd(jd_file, master_cv_path, master_cv_text, orchestrator, llm_clien
             print(f"   [!] Failed to generate CV for {jd_filename}")
             return None
 
-        # STEP 1: Extract keywords that appear in both Tailored CV and JD
-        extract_prompt = f"""
-        Identify all technical keywords, tools, frameworks, and methodologies that appear in BOTH the Tailored CV and the Job Description.
-        
-        TAILORED CV SKILLS & SUMMARY:
-        {tailored_cv.skills}
-        {tailored_cv.summary}
-        
-        JOB DESCRIPTION:
-        {jd_text[:2000]}
-        
-        Return your answer ONLY as a JSON list of strings: ["keyword1", "keyword2", ...]
-        """
-        
+        # STEP 1: Extract keywords from Tailored CV
+        extract_prompt = f"Extract a list of all technical skills, tools, and methodologies from this CV: {tailored_cv.skills}. Return JSON list of strings only."
         extraction_response = llm_client.invoke_llm(extract_prompt)
         if "```json" in extraction_response:
             extraction_response = extraction_response.split("```json")[1].split("```")[0].strip()
         elif "```" in extraction_response:
             extraction_response = extraction_response.split("```")[1].split("```")[0].strip()
         
-        borrowed_keywords = json.loads(extraction_response)
+        extracted_keywords = json.loads(extraction_response)
         
-        # STEP 2: Semantic Hallucination Check via LLM Judge
-        # We ask the LLM to filter the borrowed keywords against the Master CV
+        # METHOD 1: Programmatic Exact Match Audit
+        exact_match_hallucinations = []
+        for kw in extracted_keywords:
+            if not is_exact_match(kw, normalized_master):
+                exact_match_hallucinations.append(kw)
+
+        # METHOD 2: LLM as a Judge Audit
         judge_prompt = f"""
-        You are an expert recruitment auditor. Compare a list of keywords from a 'Tailored CV' against a 'Master CV' (Source of Truth).
+        Compare keywords from a 'Tailored CV' against a 'Master CV'.
+        Identify true hallucinations. 
+        - ALLOW: Industry synonyms (ML/Machine Learning), standard abbreviations, common role-based tasks.
+        - FLAG: Specific tools or methodologies NOT in Master CV.
         
-        MASTER CV CONTENT:
-        {master_cv_text}
+        MASTER CV: {master_cv_text}
+        KEYWORDS: {extracted_keywords}
         
-        KEYWORDS TO AUDIT:
-        {borrowed_keywords}
-        
-        TASK:
-        Identify which keywords are 'Hallucinations'.
-        - NOT A HALLUCINATION: Industry synonyms, common tasks associated with listed roles (e.g., 'model development' if they are a 'Data Scientist'), or direct mappings.
-        - IS A HALLUCINATION: Specific tools, software, or advanced methodologies NOT mentioned or reasonably inferred from the Master CV (e.g., claiming 'Kubernetes' or 'Reinforcement Learning' if it's nowhere in the Master CV).
-        
-        Return your answer ONLY as a JSON object:
-        {{
-            "hallucinations": ["list", "of", "true", "hallucinations"],
-            "valid_mappings": ["list", "of", "keywords", "that", "were", "actually", "valid", "inferences"],
-            "explanation": "briefly explain the worst hallucination found"
-        }}
+        Return JSON: {{"hallucinations": [], "explanation": ""}}
         """
-        
         judge_response = llm_client.invoke_llm(judge_prompt)
         if "```json" in judge_response:
             judge_response = judge_response.split("```json")[1].split("```")[0].strip()
         elif "```" in judge_response:
             judge_response = judge_response.split("```")[1].split("```")[0].strip()
-            
-        audit_data = json.loads(judge_response)
-        hallucinations = audit_data.get("hallucinations", [])
-        h_count = len(hallucinations)
+        
+        llm_judge_data = json.loads(judge_response)
+        llm_judge_hallucinations = llm_judge_data.get("hallucinations", [])
 
-        if h_count > 0:
-            print(f"   [!] {jd_filename}: Found {h_count} true hallucinations: {', '.join(hallucinations)}")
-        else:
-            print(f"   [+] {jd_filename}: No true hallucinations detected. {len(audit_data.get('valid_mappings', []))} keywords were validated as reasonable inferences.")
+        print(f"   [+] {jd_filename}: Exact Match Found {len(exact_match_hallucinations)} | LLM Judge Found {len(llm_judge_hallucinations)}")
 
         return {
             "jd": jd_filename,
-            "borrowed_keywords_count": len(borrowed_keywords),
-            "hallucinations": hallucinations,
-            "count": h_count,
-            "explanation": audit_data.get("explanation", "")
+            "total_keywords": len(extracted_keywords),
+            "exact_match_audit": {
+                "hallucinations": exact_match_hallucinations,
+                "count": len(exact_match_hallucinations)
+            },
+            "llm_judge_audit": {
+                "hallucinations": llm_judge_hallucinations,
+                "count": len(llm_judge_hallucinations),
+                "explanation": llm_judge_data.get("explanation", "")
+            }
         }
     except Exception as e:
         print(f"   [X] Error during evaluation of {jd_filename}: {e}")
         return None
 
 def run_evaluation():
-    # 1. Load Master CV
     master_cv_path = "data/base_cv/master_cv.yaml"
-    if not os.path.exists(master_cv_path):
-        print(f"Error: Master CV not found at {master_cv_path}")
-        return
-
     with open(master_cv_path, "r") as f:
         master_cv_data = yaml.safe_load(f)
     
     master_cv_text = yaml.dump(master_cv_data, default_flow_style=False)
+    normalized_master = clean_text(master_cv_text)
     
-    # 2. Get all JDs for evaluation
     jd_files = glob.glob("data/eval_jd/*.yaml")
-    if not jd_files:
-        print("No evaluation JDs found in data/eval_jd/")
-        return
-
-    print(f"--- Starting Parallel Semantic Evaluation against {len(jd_files)} JDs ---")
+    
+    print(f"--- Starting Comparative Evaluation against {len(jd_files)} JDs ---")
     
     orchestrator = Orchestrator()
     llm_client = LLMClient()
     
     results = []
-    
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [
-            executor.submit(evaluate_jd, jd_file, master_cv_path, master_cv_text, orchestrator, llm_client) 
+            executor.submit(evaluate_jd, jd_file, master_cv_path, master_cv_text, normalized_master, orchestrator, llm_client) 
             for jd_file in jd_files
         ]
-        
         for future in as_completed(futures):
             res = future.result()
             if res:
                 results.append(res)
 
-    # 3. Summary & Reporting
-    total_hallucinations = sum(r["count"] for r in results)
-    jds_with_hallucinations = sum(1 for r in results if r["count"] > 0)
+    # Aggregated Comparative Stats
+    total_exact = sum(r["exact_match_audit"]["count"] for r in results)
+    total_llm = sum(r["llm_judge_audit"]["count"] for r in results)
     
     summary = {
         "timestamp": datetime.now().isoformat(),
         "metrics": {
-            "total_jds_evaluated": len(jd_files),
-            "total_processed": len(results),
-            "total_hallucination_cases": total_hallucinations,
-            "jds_with_hallucinations_count": jds_with_hallucinations,
-            "hallucination_rate": jds_with_hallucinations / len(results) if results else 0
+            "total_jds": len(results),
+            "total_exact_hallucinations": total_exact,
+            "total_llm_judge_hallucinations": total_llm,
+            "average_exact_per_jd": total_exact / len(results) if results else 0,
+            "average_llm_per_jd": total_llm / len(results) if results else 0
         },
         "details": results
     }
 
-    print("\n" + "="*40)
-    print("SEMANTIC EVALUATION SUMMARY")
-    print("="*40)
-    print(f"Total JDs Evaluated:      {summary['metrics']['total_jds_evaluated']}")
-    print(f"Total Hallucination Count: {summary['metrics']['total_hallucination_cases']}")
-    print(f"Affected JDs Count:       {summary['metrics']['jds_with_hallucinations_count']}")
-    print(f"Hallucination Rate:       {summary['metrics']['hallucination_rate']:.2%}")
-    print("="*40)
+    print("\n" + "="*50)
+    print("COMPARATIVE EVALUATION SUMMARY")
+    print("="*50)
+    print(f"Total JDs Evaluated:           {summary['metrics']['total_jds']}")
+    print(f"Total Exact Match Flagged:     {summary['metrics']['total_exact_hallucinations']}")
+    print(f"Total LLM Judge Flagged:       {summary['metrics']['total_llm_judge_hallucinations']}")
+    print("-" * 50)
+    print(f"Avg Hallucinations (Exact):    {summary['metrics']['average_exact_per_jd']:.2f}")
+    print(f"Avg Hallucinations (LLM):      {summary['metrics']['average_llm_per_jd']:.2f}")
+    print("="*50)
 
     os.makedirs("data/eval_results", exist_ok=True)
-    report_name = f"eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    report_name = f"comparative_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     report_path = os.path.join("data/eval_results", report_name)
     with open(report_path, "w") as f:
         json.dump(summary, f, indent=4)
     
-    print(f"Detailed report saved to: {report_path}")
+    print(f"Detailed comparative report saved to: {report_path}")
 
 if __name__ == "__main__":
     run_evaluation()

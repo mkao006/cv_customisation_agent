@@ -1,0 +1,63 @@
+job_title: "Sr Machine Learning Engineer — Agentic Systems"
+company: "PayPal"
+location: "Singapore (Hybrid: 3 days office, 2 days home)"
+
+summary: |
+  PayPal is hiring a Senior Machine Learning Engineer to build and scale agentic AI systems for risk management in fintech. You will own end-to-end delivery of production-grade agents and ML models, improving decision quality, operational efficiency, and system reliability.
+
+key_responsibilities:
+  - Own end-to-end development of agentic systems: planning, task decomposition, tool/function calling, state/memory, multi-step execution, and reliability patterns.
+  - Design, build, and productionize AI/ML models for risk management, including traditional approaches and neural networks (classification/regression, ranking, anomaly detection, time series, NLP, deep learning; transformers, embeddings, sequence models, representation learning).
+  - Build and maintain ML pipelines for training, validation, and inference, including feature generation, reproducible experiments, and automated deployment workflows.
+  - Implement RAG and grounding pipelines to improve accuracy and auditability.
+  - Establish evaluation systems: offline datasets, regression suites, online monitoring, drift detection, and error analysis for both agents and models.
+  - Define and implement guardrails for agent actions: tool permissions, safe completion rules, policy constraints, and human-in-the-loop patterns.
+  - Improve runtime performance and operability: latency/cost optimization, observability (metrics/logs/traces), incident response and postmortems.
+
+minimum_qualifications:
+  - 3+ years of relevant experience and a Bachelor’s degree OR equivalent combination of education and experience.
+  - Demonstrated track record owning and shipping multiple production AI/ML systems end-to-end.
+  - Strong expertise in agentic AI systems, including hands-on experience with LLM-based tool use and orchestration frameworks.
+  - Strong depth in traditional AI/ML algorithms with practical experience delivering measurable business impact.
+  - Hands-on experience building and optimizing neural networks (PyTorch/TensorFlow).
+  - Solid data engineering skills: SQL fluency, pipeline/ETL design, and feature pipelines.
+  - Strong software engineering fundamentals: system design, APIs, testing, CI/CD, and production debugging.
+  - Strong business acumen: ability to translate risk goals into metrics and communicate trade-offs.
+
+preferred_qualifications:
+  - Direct experience in risk management domains (fraud, transaction risk, credit risk, AML, disputes/chargebacks).
+  - Experience with multi-agent architectures, routing policies, planners/state machines, or policy engines.
+  - Experience with retrieval optimization (vector search, hybrid search, reranking) and scalable knowledge systems.
+  - Experience building experimentation frameworks (A/B testing, counterfactual evaluation) for risk and decisioning.
+
+technical_skills:
+  frameworks:
+    - TensorFlow
+    - PyTorch
+    - scikit-learn
+  cloud_platforms:
+    - AWS
+    - Azure
+    - GCP
+  agentic_systems:
+    - LLM-based tool use
+    - Orchestration frameworks
+    - Workflow engines
+    - Agent evaluation frameworks
+  ml_methodologies:
+    - RAG (Retrieval-Augmented Generation)
+    - Grounding pipelines
+    - Transformers
+    - Embeddings
+    - Anomaly detection
+    - NLP
+    - Deep learning
+  data_engineering:
+    - SQL
+    - ETL design
+    - Feature pipelines
+  software_engineering:
+    - CI/CD
+    - API design
+    - Unit testing
+    - Observability (Metrics/Logs/Traces)
