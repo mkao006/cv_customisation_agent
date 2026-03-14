@@ -1,0 +1,39 @@
+job_title: "Lead Data Scientist - Pricing (Fulfilment)"
+company: "Gojek"
+location: "Singapore / India / Indonesia"
+
+summary: |
+  As a Data Scientist on the Fulfilment team at Gojek, you’ll join a cross-functional group solving some of the company’s most complex and impactful problems. You will contribute to improving dynamic pricing systems to drive reliability of on-demand services under varying market conditions, directly shaping user experience and driver earnings.
+
+key_responsibilities:
+  - Translate complex business challenges into well-defined technical problems solvable with data, statistics, and machine learning.
+  - Collaborate with product managers, engineers, and business stakeholders to build and scale data science solutions that power pricing across ride-hailing, food delivery and logistics.
+  - Own the full ML lifecycle—from ideation and research to model development, pipeline implementation, deployment, experimentation, and driving measurable business outcomes.
+  - Improve the efficiency of dynamic pricing systems using techniques from econometrics, causal inference and simulation.
+  - Design and interpret experiments to measure model impact, working with analysts and product teams to ensure rigorous evaluation and clear success metrics.
+  - Monitor and evaluate model performance, identifying areas for improvement and proposing solutions.
+  - Communicate insights, trade-offs, and technical decisions effectively to cross-functional stakeholders with a high degree of autonomy.
+
+required_qualifications:
+  - Bachelor’s or Master’s degree in Computer Science, Statistics, Machine Learning, or a related quantitative field.
+  - 5-8 years of relevant quantitative experience.
+  - Experience working on the core dynamic pricing engine for a ride-hailing company or other similarly dynamic domain.
+  - Solid understanding of statistics and machine learning fundamentals, with projects demonstrating practical application.
+  - Proficiency in Python and SQL, and familiarity with data analysis or modeling libraries.
+  - Strong analytical thinking and problem-solving skills with the ability to reason from data.
+  - Willingness to learn fast, take initiative, and work collaboratively in cross-functional teams.
+
+technical_skills:
+  languages:
+    - Python
+    - SQL
+  methodologies:
+    - Econometrics
+    - Causal Inference
+    - Simulation
+    - Machine Learning Lifecycle
+    - Experimental Design (A/B testing)
+  domain_knowledge:
+    - Dynamic Pricing
+    - Ride-hailing / Logistics
+    - Fulfilment Systems

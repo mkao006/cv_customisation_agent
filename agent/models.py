@@ -32,4 +32,5 @@ class AgentState(TypedDict):
     research_gaps: Optional[str]
     application_strategy: str
     personalization_instructions: Optional[str]
+    cv_audit_log: Optional[str]
     final_ats_cv: Optional[OptimizedCV]

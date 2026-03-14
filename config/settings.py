@@ -24,6 +24,7 @@ class Settings:
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
     DEFAULT_MODEL = os.getenv("MODEL_VERSION", "openai/gpt-4o-mini")
+    STRONG_MODEL = os.getenv("STRONG_MODEL_VERSION", "openai/gpt-5-mini")
     BASE_CV_DIR = "data/base_cv"
     JOBS_DIR = "data/jobs"
     OUTPUT_DIR = "data/output"

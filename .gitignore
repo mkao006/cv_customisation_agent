@@ -22,6 +22,7 @@ venv/
 # Data and Outputs (Sensitive or large)
 data/output/
 data/jobs/
+data/eval_results/
 outputs/
 *.pdf
 TAILORED_CV.md
