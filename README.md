@@ -1,17 +1,17 @@
 # Job Application Research & Tailoring Agent
 
-An AI-powered multi-agent pipeline built with **LangGraph**, **LangChain**, and **OpenRouter (GPT-4o mini)** to research companies and tailor CVs for specific job descriptions.
+An AI-powered multi-agent pipeline built with **LangGraph**, **LangChain**, and **OpenRouter** to research companies and tailor CVs for specific job descriptions with built-in hallucination protection.
 
 ## Features
-- **JD Ingestion**: Supports URLs (web scraping) and local PDF/TXT files.
-- **JD Validation**: Automatically verifies if the source is a valid job description before starting research.
-- **Parallel Intelligence**: Simultaneously researches the Hiring Company, Role Best Practices, and LinkedIn Competing Candidate Profiles.
-- **Recursive Refinement**: Evaluates research for gaps and loops back to refine data (up to 3 iterations).
-- **ATS-Optimized CV**: Produces a professionally styled PDF and Markdown CV using structured YAML as the "Source of Truth".
-- **Organized Outputs**: Each run is saved in a unique, timestamped directory.
+- **JD Ingestion & Validation**: Supports URLs and local files. Automatically verifies if the content is a valid job description.
+- **Parallel Intelligence**: Simultaneously researches the Hiring Company, Role Best Practices, and LinkedIn Competing Candidate Profiles (X-Ray Sourcing).
+- **Self-Refining Loop**: Evaluates research for gaps and recursively refines data (up to 3 iterations).
+- **CV Sanitization**: A dedicated auditor node that compares the tailored CV against your **Source of Truth** (YAML) to detect and remove hallucinations.
+- **Multi-Tiered Models**: Uses faster models (`GPT-4o mini`) for research and stronger models (`GPT-5 mini`) for critical synthesis and auditing.
+- **Organized Outputs**: Chronological, timestamped directories for every run.
 
 ## Workflow Architecture
-The agent uses a parallel fan-out/fan-in pattern with a self-correcting refinement loop:
+The agent uses a parallel fan-out/fan-in pattern with a self-correcting refinement and sanitization loop:
 
 ![Agent Workflow](workflow.png)
 
@@ -27,36 +27,42 @@ The agent uses a parallel fan-out/fan-in pattern with a self-correcting refineme
    ```bash
    OPENROUTER_API_KEY=your_openrouter_api_key
    TAVILY_API_KEY=your_tavily_api_key
-   USER_AGENT="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..." 
+   MODEL_VERSION=openai/gpt-4o-mini
+   STRONG_MODEL_VERSION=openai/gpt-5-mini
    ```
 
 ## Usage
 
-### Run with Defaults
-Uses the built-in sample CV and a default Apple MLE job description:
-```bash
-python main.py
-```
-
-### Tailor for a Specific Job
+### Tailor a CV
+Uses your master YAML CV and targets a specific job:
 ```bash
 python main.py --cv data/base_cv/master_cv.yaml --jd "https://company.com/job-url"
 ```
 
-### Command Line Options
+### Evaluation Suite
+Run a parallel, semantic hallucination check against all JDs in `data/eval_jd/`:
+```bash
+make evaluate
+```
+
+### Utility Commands
+| Command | Description |
+| :--- | :--- |
+| `make lint` | Run Ruff linting and formatting checks |
+| `make test` | Run the unit test suite |
+| `python main.py --visualize` | Generate the `workflow.png` diagram |
+| `python main.py --pdf <file.md>` | Render an existing Markdown file to a styled PDF |
+
+## CLI Arguments
 | Argument | Description | Default |
 | :--- | :--- | :--- |
 | `--cv` | Path to your original CV (YAML, PDF, or TXT) | `data/base_cv/master_cv.yaml` |
 | `--jd` | URL or path to the Job Description | (Apple MLE Job URL) |
-| `--model` | OpenRouter model to use | `openai/gpt-4o-mini` |
+| `--model` | Primary model for research | `openai/gpt-4o-mini` |
 | `--personalize` | Custom instructions for the LLM | None |
-| `--visualize` | Generate and save the workflow diagram | False |
-| `--pdf` | Render an existing Markdown file to styled PDF | None |
 
 ## Outputs
-Each execution creates a folder in `data/output/YYYYMMDD_HHMMSS/` containing:
+Each run saves to `data/output/YYYYMMDD_HHMMSS/`:
 - `TAILORED_CV.pdf`: The final professionally formatted resume.
-- `TAILORED_CV.md`: Markdown version of the tailored resume.
 - `STRATEGY_REPORT.pdf`: Detailed research and tailoring strategy.
-- `STRATEGY_REPORT.md`: Markdown version of the research report.
-- `metadata.json`: Logs the inputs and model used for that specific run.
+- `metadata.json`: Logs the inputs, model versions, and audit status.
