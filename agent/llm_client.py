@@ -37,4 +37,4 @@ class LLMClient:
         return llm.with_structured_output(schema)
 
     def search(self, query: str) -> str:
-        return str(self.tavily.run(query))
+        return str(self.tavily.invoke(query))
