@@ -3,12 +3,14 @@ import argparse
 import json
 from datetime import datetime
 from opentelemetry import trace
-from openinference.semantic_conventions.trace import SpanAttributes
 from config.settings import Settings
 from agent.orchestrator import Orchestrator
 from tools.cv_builder import CVBuilder
 
 tracer = trace.get_tracer(__name__)
+
+# Constants for OpenInference
+OPENINFERENCE_SPAN_KIND = "openinference.span.kind"
 
 def main():
     parser = argparse.ArgumentParser(description="AI Job Research & CV Tailoring Agent")
@@ -37,7 +39,7 @@ def main():
     # Case 3: Run the full Agent
     with tracer.start_as_current_span("Agent Run") as span:
         # Categorize this span as an AGENT for Phoenix UI
-        span.set_attribute(SpanAttributes.OPENINFERENCE_SPAN_KIND, "AGENT")
+        span.set_attribute(OPENINFERENCE_SPAN_KIND, "AGENT")
         span.set_attribute("jd_source", args.jd)
         span.set_attribute("cv_source", args.cv)
         

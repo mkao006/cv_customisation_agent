@@ -2,6 +2,7 @@ import json
 import yaml
 import os
 from typing import Literal
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
 from agent.models import AgentState, OptimizedCV
 from agent.llm_client import LLMClient
@@ -60,7 +61,7 @@ class Orchestrator:
         
         return workflow.compile()
 
-    def ingest_inputs(self, state: AgentState) -> AgentState:
+    def ingest_inputs(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Ingesting Inputs ---")
         try:
             jd_text = JobSearch.get_text_from_jd(state["jd_source"])
@@ -80,43 +81,42 @@ class Orchestrator:
         except Exception as e:
             return {"jd_text": "", "jd_validation_error": f"Failed to reach source: {str(e)}"}
 
-    def validate_jd(self, state: AgentState) -> AgentState:
+    def validate_jd(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Validating Job Description ---")
         if state.get("jd_validation_error"): return state
         jd_text = state["jd_text"]
         if len(jd_text.strip()) < 100: return {"jd_validation_error": "JD too short."}
         prompt = f"Is this a job description? Respond YES/NO:\n\n{jd_text[:1000]}"
-        response = self.llm_client.invoke_llm(prompt)
+        response = self.llm_client.invoke_llm(prompt, config=config)
         if "YES" not in response.upper(): return {"jd_validation_error": f"Invalid JD: {response}"}
         print("JD Validation Successful.")
         return {"jd_validation_error": None}
 
-    def research_hub(self, state: AgentState) -> AgentState:
+    def research_hub(self, state: AgentState, config: RunnableConfig) -> AgentState:
         return state
 
     def route_jd_validation(self, state: AgentState) -> Literal["valid", "invalid"]:
         return "invalid" if state.get("jd_validation_error") else "valid"
 
-    def research_company(self, state: AgentState) -> AgentState:
+    def research_company(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print(f"--- [Iter {state['research_iteration']}] Researching Company ---")
         query = f"company culture and goals 2026. Gaps: {state.get('research_gaps', '')}"
-        return {"company_research": self.llm_client.search(query)}
+        return {"company_research": self.llm_client.search(query, config=config)}
 
-    def research_best_practices(self, state: AgentState) -> AgentState:
+    def research_best_practices(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print(f"--- [Iter {state['research_iteration']}] Researching Trends ---")
         query = f"2026 resume trends for tech. Gaps: {state.get('research_gaps', '')}"
-        return {"best_practices_research": self.llm_client.search(query)}
+        return {"best_practices_research": self.llm_client.search(query, config=config)}
 
-    def research_competing_candidates(self, state: AgentState) -> AgentState:
+    def research_competing_candidates(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print(f"--- [Iter {state['research_iteration']}] X-Ray Sourcing ---")
         query = f"LinkedIn profiles for similar roles. Gaps: {state.get('research_gaps', '')}"
-        return {"competing_candidates_research": self.llm_client.search(query)}
+        return {"competing_candidates_research": self.llm_client.search(query, config=config)}
 
-    def evaluate_research(self, state: AgentState) -> AgentState:
+    def evaluate_research(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Evaluating Research (Strong Model) ---")
         prompt = f"Evaluate research against JD. Return JSON {{'evaluation': 'satisfactory'|'needs_refinement', 'gaps': 'string'}}. Data: {state['company_research'][:500]}"
-        # Using Strong Model for evaluation
-        response = self.llm_client.invoke_llm(prompt, use_strong=True)
+        response = self.llm_client.invoke_llm(prompt, use_strong=True, config=config)
         try:
             if "```json" in response: response = response.split("```json")[1].split("```")[0].strip()
             data = json.loads(response)
@@ -129,27 +129,27 @@ class Orchestrator:
         if state["research_iteration"] >= state["max_research_iterations"]: return "max_iterations_reached"
         return "loop_to_research"
 
-    def synthesize_strategy(self, state: AgentState) -> AgentState:
+    def synthesize_strategy(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Synthesizing Strategy (Strong Model) ---")
         prompt = f"Create resume strategy. JD: {state['jd_text'][:1000]} CV: {state['original_cv'][:1000]}"
-        # Using Strong Model for synthesis
-        return {"application_strategy": self.llm_client.invoke_llm(prompt, use_strong=True)}
+        return {"application_strategy": self.llm_client.invoke_llm(prompt, use_strong=True, config=config)}
 
-    def generate_cv(self, state: AgentState) -> AgentState:
+    def generate_cv(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Generating ATS-Optimized CV ---")
         structured_llm = self.llm_client.with_structured_output(OptimizedCV)
         prompt = CV_GENERATION_TEMPLATE.format(
             strategy=state['application_strategy'], original_cv=state['original_cv'],
             jd_text=state['jd_text'], personalization_instructions=state.get('personalization_instructions', '')
         )
-        return {"final_ats_cv": structured_llm.invoke(prompt)}
+        # For structured output, we pass config to invoke()
+        final_cv = structured_llm.invoke(prompt, config=config)
+        return {"final_ats_cv": final_cv}
 
-    def sanitize_cv(self, state: AgentState) -> AgentState:
+    def sanitize_cv(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Auditing CV for Hallucinations (Strong Model) ---")
         cv = state["final_ats_cv"]
         if not cv: return state
 
-        # Using Strong Model for sanitization
         structured_llm = self.llm_client.with_structured_output(OptimizedCV, use_strong=True)
         
         audit_prompt = f"""
@@ -158,7 +158,7 @@ class Orchestrator:
         TAILORED CV TO AUDIT: {cv.model_dump_json()}
         REMOVE any tool/skill not in Master CV. Return valid JSON.
         """
-        sanitized_cv = structured_llm.invoke(audit_prompt)
+        sanitized_cv = structured_llm.invoke(audit_prompt, config=config)
         return {
             "final_ats_cv": sanitized_cv,
             "cv_audit_log": "CV was audited and sanitized against Master CV using the Strong Model."

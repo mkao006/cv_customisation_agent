@@ -9,14 +9,14 @@ class LLMClient:
         self.strong_model_name = Settings.STRONG_MODEL
         
         # Standard model for general tasks
-        self.standard_llm = self._init_llm(self.standard_model_name)
+        self.standard_llm = self._init_llm(self.standard_model_name, is_strong=False)
         
         # Strong model for critical synthesis and review tasks
-        self.strong_llm = self._init_llm(self.strong_model_name)
+        self.strong_llm = self._init_llm(self.strong_model_name, is_strong=True)
         
         self.tavily = TavilySearch(max_results=5)
 
-    def _init_llm(self, model_name):
+    def _init_llm(self, model_name, is_strong=False):
         return ChatOpenAI(
             model=model_name,
             openai_api_key=Settings.OPENROUTER_API_KEY,
@@ -28,13 +28,16 @@ class LLMClient:
             }
         )
 
-    def invoke_llm(self, prompt: str, use_strong=False) -> str:
+    def invoke_llm(self, prompt: str, use_strong=False, config=None) -> str:
+        """Invokes the LLM with optional trace configuration."""
         llm = self.strong_llm if use_strong else self.standard_llm
-        return llm.invoke(prompt).content
+        return llm.invoke(prompt, config=config).content
 
     def with_structured_output(self, schema, use_strong=False):
+        """Returns an LLM bound to a structured output schema."""
         llm = self.strong_llm if use_strong else self.standard_llm
         return llm.with_structured_output(schema)
 
-    def search(self, query: str) -> str:
-        return str(self.tavily.invoke(query))
+    def search(self, query: str, config=None) -> str:
+        """Performs a search with optional trace configuration."""
+        return str(self.tavily.invoke(query, config=config))
