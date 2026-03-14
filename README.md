@@ -1,6 +1,6 @@
 # Job Application Research & Tailoring Agent
 
-An AI-powered multi-agent pipeline built with **LangGraph**, **LangChain**, and **Google Gemini** to research companies and tailor CVs for specific job descriptions.
+An AI-powered multi-agent pipeline built with **LangGraph**, **LangChain**, and **OpenRouter (GPT-4o mini)** to research companies and tailor CVs for specific job descriptions.
 
 ## Features
 - **JD Ingestion**: Supports URLs (web scraping) and local PDF/TXT files.
@@ -25,7 +25,7 @@ The agent uses a parallel fan-out/fan-in pattern with a self-correcting refineme
 2. **Configure Environment**:
    Create a `.env` file in the root directory:
    ```bash
-   GOOGLE_API_KEY=your_gemini_api_key
+   OPENROUTER_API_KEY=your_openrouter_api_key
    TAVILY_API_KEY=your_tavily_api_key
    USER_AGENT="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..." 
    ```
@@ -48,7 +48,7 @@ python main.py --cv data/base_cv/master_cv.yaml --jd "https://company.com/job-ur
 | :--- | :--- | :--- |
 | `--cv` | Path to your original CV (YAML, PDF, or TXT) | `data/base_cv/master_cv.yaml` |
 | `--jd` | URL or path to the Job Description | (Apple MLE Job URL) |
-| `--model` | Gemini model to use | `gemini-2.5-flash` |
+| `--model` | OpenRouter model to use | `openai/gpt-4o-mini` |
 | `--personalize` | Custom instructions for the LLM | None |
 | `--visualize` | Generate and save the workflow diagram | False |
 | `--pdf` | Render an existing Markdown file to styled PDF | None |
