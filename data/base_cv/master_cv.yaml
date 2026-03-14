@@ -30,7 +30,9 @@ work_experience:
     location: Singapore
     dates: June 2021 – April 2024
     responsibilities:
-      - Matchmaking and Pricing machine learning tech lead, maximising booking completion rate and pricing optimisation.
+      - Matchmaking and Pricing machine learning tech lead.
+      - Objective is to maximising booking completion rate and profit margin through dynamic pricing.
+      - The system is real-time, low latency, large scale system that need to coordinate across multiple micro services and teams.
 
   - title: Data Scientist
     company: Envato
