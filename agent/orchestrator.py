@@ -168,7 +168,10 @@ class Orchestrator:
 
     def save_graph_image(self, output_path: str = "workflow.png"):
         try:
-            img_data = self.workflow.get_graph().draw_mermaid_png()
+            img_data = self.workflow.get_graph().draw_mermaid_png(
+                max_retries=5,
+                retry_delay=2.0
+            )
             with open(output_path, "wb") as f: f.write(img_data)
             print(f"--- Workflow visualization saved to {output_path} ---")
         except Exception as e: print(f"Could not generate graph image: {e}")
