@@ -9,7 +9,7 @@ from tools.cv_builder import CVBuilder
 def main():
     parser = argparse.ArgumentParser(description="AI Job Research & CV Tailoring Agent")
     parser.add_argument("--cv", default="data/base_cv/master_cv.yaml", help="Path to original CV")
-    parser.add_argument("--jd", default="https://jobs.apple.com/en-us/details/200638600-3278/machine-learning-engineer-data-solutions-initiatives", help="JD URL or path")
+    parser.add_argument("--jd", default="data/eval_jd/apple_mle.yaml", help="JD URL or path")
     parser.add_argument("--model", help="Gemini model version")
     parser.add_argument("--pdf", help="Render an existing Markdown file to PDF")
     parser.add_argument("--personalize", help="Additional custom instruction to personalize the CV")
@@ -28,6 +28,7 @@ def main():
         return
 
     # Case 2: Run the full Agent
+    Settings.init_tracing()
     orchestrator = Orchestrator(model_name=args.model)
     initial_state = {
         "original_cv": args.cv,
@@ -42,6 +43,11 @@ def main():
     
     final_state = orchestrator.run(initial_state)
     
+    # Check for JD validation errors
+    if final_state.get("jd_validation_error"):
+        print(f"\n--- Process Aborted: {final_state['jd_validation_error']} ---")
+        return
+
     # Create timestamped output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = os.path.join(Settings.OUTPUT_DIR, timestamp)
@@ -65,7 +71,14 @@ def main():
         
     # 3. Save Metadata
     with open(os.path.join(output_dir, "metadata.json"), "w") as f:
-        json.dump({"cv": args.cv, "jd": args.jd, "model": orchestrator.llm_client.model_name, "personalize": args.personalize, "timestamp": timestamp}, f, indent=4)
+        json.dump({
+            "cv": args.cv, 
+            "jd": args.jd, 
+            "standard_model": orchestrator.llm_client.standard_model_name, 
+            "strong_model": orchestrator.llm_client.strong_model_name,
+            "personalize": args.personalize, 
+            "timestamp": timestamp
+        }, f, indent=4)
     
     print(f"\n--- Run complete. All files saved to {output_dir} ---")
 

@@ -88,6 +88,7 @@ class Orchestrator:
         prompt = f"Is this a job description? Respond YES/NO:\n\n{jd_text[:1000]}"
         response = self.llm_client.invoke_llm(prompt)
         if "YES" not in response.upper(): return {"jd_validation_error": f"Invalid JD: {response}"}
+        print("JD Validation Successful.")
         return {"jd_validation_error": None}
 
     def research_hub(self, state: AgentState) -> AgentState:

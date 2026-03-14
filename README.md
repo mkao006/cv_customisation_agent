@@ -57,7 +57,7 @@ make evaluate
 | Argument | Description | Default |
 | :--- | :--- | :--- |
 | `--cv` | Path to your original CV (YAML, PDF, or TXT) | `data/base_cv/master_cv.yaml` |
-| `--jd` | URL or path to the Job Description | (Apple MLE Job URL) |
+| `--jd` | URL or path to the Job Description | `data/eval_jd/apple_mle.yaml` |
 | `--model` | Primary model for research | `openai/gpt-4o-mini` |
 | `--personalize` | Custom instructions for the LLM | None |
 
