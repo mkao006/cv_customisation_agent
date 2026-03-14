@@ -86,7 +86,7 @@ class Orchestrator:
         if state.get("jd_validation_error"): return state
         jd_text = state["jd_text"]
         if len(jd_text.strip()) < 100: return {"jd_validation_error": "JD too short."}
-        prompt = f"Is this a job description? Respond YES/NO:\n\n{jd_text[:1000]}"
+        prompt = f"Is this a job description? Respond YES/NO and provide a brief reason.\n\nTEXT:\n{jd_text}"
         response = self.llm_client.invoke_llm(prompt, config=config)
         if "YES" not in response.upper(): return {"jd_validation_error": f"Invalid JD: {response}"}
         print("JD Validation Successful.")
@@ -100,22 +100,46 @@ class Orchestrator:
 
     def research_company(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print(f"--- [Iter {state['research_iteration']}] Researching Company ---")
-        query = f"company culture and goals 2026. Gaps: {state.get('research_gaps', '')}"
+        prompt = f"Extract the company name and job title from this Job Description:\n\n{state['jd_text']}"
+        info = self.llm_client.invoke_llm(prompt, config=config)
+        query = f"{info} company culture and goals 2026. Gaps to fill: {state.get('research_gaps', '')}"
         return {"company_research": self.llm_client.search(query, config=config)}
 
     def research_best_practices(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print(f"--- [Iter {state['research_iteration']}] Researching Trends ---")
-        query = f"2026 resume trends for tech. Gaps: {state.get('research_gaps', '')}"
+        query = f"2026 resume trends for tech. Gaps to fill: {state.get('research_gaps', '')}"
         return {"best_practices_research": self.llm_client.search(query, config=config)}
 
     def research_competing_candidates(self, state: AgentState, config: RunnableConfig) -> AgentState:
-        print(f"--- [Iter {state['research_iteration']}] X-Ray Sourcing ---")
-        query = f"LinkedIn profiles for similar roles. Gaps: {state.get('research_gaps', '')}"
-        return {"competing_candidates_research": self.llm_client.search(query, config=config)}
+        print(f"--- [Iter {state['research_iteration']}] X-Ray Sourcing LinkedIn Profiles ---")
+        prompt = f"Identify the primary Job Title and top 3 must-have technical keywords from this JD:\n\n{state['jd_text']}"
+        extraction = self.llm_client.invoke_llm(prompt, config=config)
+        gaps = state.get("research_gaps", "")
+        query = f"{extraction} 'San Francisco Bay Area' {gaps}"
+        results = self.llm_client.xray_search(
+            query=query,
+            domains=["linkedin.com/in"],
+            max_results=10,
+            config=config
+        )
+        return {"competing_candidates_research": results}
 
     def evaluate_research(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Evaluating Research (Strong Model) ---")
-        prompt = f"Evaluate research against JD. Return JSON {{'evaluation': 'satisfactory'|'needs_refinement', 'gaps': 'string'}}. Data: {state['company_research'][:500]}"
+        prompt = f"""
+        Evaluate the following research against the requirements of the JD.
+        
+        JD:
+        {state['jd_text']}
+        
+        RESEARCH:
+        {state['company_research']}
+        {state['best_practices_research']}
+        {state['competing_candidates_research']}
+        
+        Return JSON {{'evaluation': 'satisfactory'|'needs_refinement', 'gaps': 'string'}}. 
+        Only identify gaps if critical information about company goals or role-specific skills is missing.
+        """
         response = self.llm_client.invoke_llm(prompt, use_strong=True, config=config)
         try:
             if "```json" in response: response = response.split("```json")[1].split("```")[0].strip()
@@ -131,17 +155,33 @@ class Orchestrator:
 
     def synthesize_strategy(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Synthesizing Strategy (Strong Model) ---")
-        prompt = f"Create resume strategy. JD: {state['jd_text'][:1000]} CV: {state['original_cv'][:1000]}"
+        prompt = f"""
+        Create a targeted resume strategy.
+        
+        JD:
+        {state['jd_text']}
+        
+        RESEARCH:
+        {state['company_research']}
+        {state['best_practices_research']}
+        {state['competing_candidates_research']}
+        
+        CV:
+        {state['original_cv']}
+        
+        Output a detailed strategy highlighting key keywords, cultural fit, and gaps to mitigate.
+        """
         return {"application_strategy": self.llm_client.invoke_llm(prompt, use_strong=True, config=config)}
 
     def generate_cv(self, state: AgentState, config: RunnableConfig) -> AgentState:
         print("--- Generating ATS-Optimized CV ---")
         structured_llm = self.llm_client.with_structured_output(OptimizedCV)
         prompt = CV_GENERATION_TEMPLATE.format(
-            strategy=state['application_strategy'], original_cv=state['original_cv'],
-            jd_text=state['jd_text'], personalization_instructions=state.get('personalization_instructions', '')
+            strategy=state['application_strategy'], 
+            original_cv=state['original_cv'],
+            jd_text=state['jd_text'], 
+            personalization_instructions=state.get('personalization_instructions', '')
         )
-        # For structured output, we pass config to invoke()
         final_cv = structured_llm.invoke(prompt, config=config)
         return {"final_ats_cv": final_cv}
 
@@ -153,10 +193,21 @@ class Orchestrator:
         structured_llm = self.llm_client.with_structured_output(OptimizedCV, use_strong=True)
         
         audit_prompt = f"""
-        You are a strict integrity auditor. Compare the 'Tailored CV' against the 'Master CV'.
-        MASTER CV: {state['original_cv']}
-        TAILORED CV TO AUDIT: {cv.model_dump_json()}
-        REMOVE any tool/skill not in Master CV. Return valid JSON.
+        You are a strict integrity auditor. Compare the 'Tailored CV' against the 'Master CV' (Source of Truth).
+        
+        MASTER CV:
+        {state['original_cv']}
+        
+        TAILORED CV TO AUDIT:
+        {cv.model_dump_json()}
+        
+        TASK:
+        1. Identify any specific tools, skills, or achievements in the Tailored CV that are NOT supported by the Master CV.
+        2. CRITICAL: Identify any numerical metrics (%, $, time units, counts) in the Tailored CV that do not appear in the Master CV.
+        3. REMOVE or REPLACE any hallucinated tools OR invented numerical metrics. If a percentage like '20%' is not in the Master CV, remove it.
+        4. Do NOT remove common industry terminology that describes general tasks related to the user's role.
+        
+        Final Output must be a valid JSON matching the CV schema.
         """
         sanitized_cv = structured_llm.invoke(audit_prompt, config=config)
         return {

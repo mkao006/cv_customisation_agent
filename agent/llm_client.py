@@ -39,5 +39,15 @@ class LLMClient:
         return llm.with_structured_output(schema)
 
     def search(self, query: str, config=None) -> str:
-        """Performs a search with optional trace configuration."""
+        """Performs a general search."""
         return str(self.tavily.invoke(query, config=config))
+
+    def xray_search(self, query: str, domains=["linkedin.com/in"], max_results=10, config=None) -> str:
+        """Performs a precision X-Ray search targeting specific domains."""
+        # We manually configure the tool for an advanced search pass
+        advanced_search = TavilySearch(
+            max_results=max_results,
+            search_depth="advanced",
+            include_domains=domains
+        )
+        return str(advanced_search.invoke(query, config=config))
