@@ -13,6 +13,9 @@ test:
 evaluate:
 	uv run python evaluate.py
 
+start_phoenix:
+	uv run phoenix serve
+
 ## Remove all build, test, coverage and Python artifacts
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
