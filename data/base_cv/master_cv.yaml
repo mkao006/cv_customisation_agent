@@ -1,8 +1,9 @@
 name: Michael C. J. Kao
 contact:
-  email: "[Your Email]"
+  email: "mkao006@gmail.com"
   location: Singapore
-  linkedin: "[Your LinkedIn]"
+  linkedin: "https://www.linkedin.com/in/mkao006/"
+  github: "https://github.com/mkao006"
 
 personal_summary: |
   Lead Data Scientist with a deep technical foundation and a commitment to driving measurable business value through AI/ML at scale. 
@@ -13,6 +14,7 @@ technical_skills:
   languages: ["R", "Python", "Golang", "SQL"]
   ml_stack: ["DBT", "Airflow", "Flyte", "Mlflow", "Arize", "Spark"]
   ml_libraries: ["pandas", "numpy", "pytorch", "scikit-learn", "lightgbm", "xgboost"]
+  ai_stack: ["LangChain", "LangGraph", "Tavily", "OpenRouter"]
   other: ["Linux", "Docker", "Git", "Databricks", "AWS Sagemaker"]
 
 work_experience:
