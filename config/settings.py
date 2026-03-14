@@ -4,7 +4,6 @@ import urllib3
 import socket
 from dotenv import load_dotenv
 from openinference.instrumentation.langchain import LangChainInstrumentor
-from openinference.instrumentation.openai import OpenAIInstrumentor
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
@@ -79,6 +78,5 @@ class Settings:
         tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(tracer_provider)
         
-        # 3. Instrument LangChain and OpenAI (for OpenRouter)
+        # 3. Instrument LangChain ONLY (It already handles OpenAI/OpenRouter calls within its spans)
         LangChainInstrumentor().instrument()
-        OpenAIInstrumentor().instrument()
