@@ -10,6 +10,7 @@ from opentelemetry import trace
 from agent.orchestrator import Orchestrator
 from agent.llm_client import LLMClient
 from tools.cv_builder import CVBuilder
+from tools.cv_analyzer import CVAnalyzer
 from config.settings import Settings
 
 tracer = trace.get_tracer(__name__)
@@ -50,39 +51,6 @@ def check_metric_hallucination(cv_text, master_text):
         return {"status": "fail", "message": f"Metric Hallucination: {hallucinated_metrics}", "hallucinations": hallucinated_metrics}
     return {"status": "pass", "message": "No invented metrics found."}
 
-def check_quality_audit(cv_text, jd_text, llm_client, config):
-    """Performs a qualitative scoring of the CV on a 1-5 scale."""
-    quality_prompt = f"""
-    You are an elite technical recruiter. Score the following CV against the JD on a scale of 1 to 5.
-    
-    JD:
-    {jd_text[:1000]}
-    
-    CV:
-    {cv_text}
-    
-    SCORING CRITERIA:
-    1. **Impact & Keywords**: (1-5) 5 = Highly quantified impact using action verbs and matching key JD terms.
-    2. **Layout & Hierarchy**: (1-5) 5 = Logical hierarchy, standard headers, 100% professional tone.
-    3. **Technical Context**: (1-5) 5 = Skills are clearly connected to infrastructure, scale, and business value.
-    
-    Return your answer ONLY as a JSON object:
-    {{
-        "impact_score": int,
-        "layout_score": int,
-        "context_score": int,
-        "total_avg": float,
-        "justification": "short 1-sentence critique"
-    }}
-    """
-    response = llm_client.invoke_llm(quality_prompt, config=config, use_strong=True)
-    try:
-        # Clean JSON and return
-        data = json.loads(re.sub(r"```json|```", "", response).strip())
-        return data
-    except Exception:
-        return {"impact_score": 0, "layout_score": 0, "context_score": 0, "total_avg": 0, "justification": "Audit failed"}
-
 def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_cv_text, normalized_master, orchestrator, llm_client):
     jd_filename = os.path.basename(jd_file)
     jd_base = jd_filename.replace(".yaml", "").replace(".yml", "")
@@ -112,27 +80,19 @@ def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_c
             with open(os.path.join(jd_output_dir, "TAILORED_CV.md"), "w") as f: f.write(cv_md)
             CVBuilder.render_pdf(cv_md, os.path.join(jd_output_dir, "TAILORED_CV.pdf"))
 
-            # Audits
+            # 1. Hallucination Audits
             yoe_audit = check_yoe_hallucination(cv_md)
             metric_audit = check_metric_hallucination(cv_md, master_cv_text)
-            quality_audit = check_quality_audit(cv_md, jd_text, llm_client, trace_config)
 
-            extract_prompt = f"Extract technical skills from this CV: {tailored_cv.skills}. Return JSON list of strings only."
-            extraction_response = llm_client.invoke_llm(extract_prompt, config=trace_config)
-            extracted_keywords = json.loads(re.sub(r"```json|```", "", extraction_response).strip())
-            exact_match_hallucinations = [kw for kw in extracted_keywords if not is_exact_match(kw, normalized_master)]
-
-            judge_prompt = f"Audit keywords against Master CV. Identify true hallucinations. Master CV: {master_cv_text} Keywords: {extracted_keywords}. Return JSON: {{'hallucinations': [], 'explanation': ''}}"
-            judge_response = llm_client.invoke_llm(judge_prompt, config=trace_config)
-            llm_judge_data = json.loads(re.sub(r"```json|```", "", judge_response).strip())
+            # 2. Deterministic & Hybrid Audit
+            ats_audit = CVAnalyzer.run_full_audit(tailored_cv, cv_md, jd_text, llm_client, trace_config)
 
             return {
                 "jd": jd_filename,
                 "yoe_audit": yoe_audit,
                 "metric_audit": metric_audit,
-                "quality_audit": quality_audit,
-                "exact_match_audit": {"hallucinations": exact_match_hallucinations, "count": len(exact_match_hallucinations)},
-                "llm_judge_audit": {"hallucinations": llm_judge_data.get("hallucinations", []), "count": len(llm_judge_data.get("hallucinations", []))}
+                "ats_audit": ats_audit.model_dump(),
+                "overall_status": ats_audit.overall_recommendation
             }
         except Exception as e:
             print(f"   [X] Error during evaluation of {jd_filename}: {e}")
@@ -166,26 +126,26 @@ def run_evaluation():
             "total_jds": len(results),
             "yoe_hallucinations": sum(1 for r in results if r["yoe_audit"]["status"] == "fail"),
             "metric_hallucinations": sum(1 for r in results if r["metric_audit"]["status"] == "fail"),
-            "avg_quality_score": sum(r["quality_audit"]["total_avg"] for r in results) / len(results) if results else 0
+            "avg_parsing_acc": sum(r["ats_audit"]["parsing_accuracy"] for r in results) / len(results) if results else 0,
+            "avg_evidence_score": sum(r["ats_audit"]["evidence_score"] for r in results) / len(results) if results else 0
         },
         "details": results
     }
 
     # PRINT SUMMARY TABLE
-    print("\n" + "="*80)
-    print(f"EXPERIMENT SUMMARY: {experiment_id}")
-    print("="*80)
-    print(f"{'JD Filename':<25} | {'YoE':<5} | {'Metric':<6} | {'Qual Score':<10} | {'Justification'}")
-    print("-" * 80)
+    print("\n" + "="*95)
+    print(f"HYBRID ATS EVALUATION SUMMARY: {experiment_id}")
+    print("="*95)
+    print(f"{'JD Filename':<20} | {'YoE':<5} | {'Metric':<6} | {'Parse Acc':<9} | {'Evidence':<8} | {'Alignment':<7} | {'Status'}")
+    print("-" * 95)
     for r in results:
         yoe = "FAIL" if r["yoe_audit"]["status"] == "fail" else "PASS"
         metric = "FAIL" if r["metric_audit"]["status"] == "fail" else "PASS"
-        score = f"{r['quality_audit']['total_avg']:.1f}/5"
-        just = r['quality_audit']['justification'][:30] + "..."
-        print(f"{r['jd']:<25} | {yoe:<5} | {metric:<6} | {score:<10} | {just}")
-    print("-" * 80)
-    print(f"OVERALL AVG QUALITY: {summary['metrics']['avg_quality_score']:.2f} / 5.0")
-    print("="*80)
+        a = r["ats_audit"]
+        print(f"{r['jd']:<20} | {yoe:<5} | {metric:<6} | {a['parsing_accuracy']:<9.0f} | {a['evidence_score']:<8.0f} | {a['alignment_score']:<7} | {r['overall_status']}")
+    print("-" * 95)
+    print(f"AVG PARSING: {summary['metrics']['avg_parsing_acc']:.1f}%  |  AVG EVIDENCE: {summary['metrics']['avg_evidence_score']:.1f}%")
+    print("="*95)
 
     with open(os.path.join(experiment_dir, "experiment_results.json"), "w") as f: json.dump(summary, f, indent=4)
     print(f"Artifacts: {experiment_dir}\n")
