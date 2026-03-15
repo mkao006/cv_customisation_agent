@@ -18,6 +18,14 @@ class OptimizedCV(BaseModel):
     skills: List[str] = Field(description="A list of relevant technical and soft skills")
     education: List[Education] = Field(description="A list of educational qualifications")
 
+class ATSEvaluation(BaseModel):
+    parsing_accuracy: float = Field(description="0-100: % of items correctly parsed from MD vs intended")
+    evidence_score: float = Field(description="0-100: % of skills backed by experience/projects")
+    alignment_score: int = Field(description="1-100: Semantic match between CV and JD")
+    unbacked_skills: List[str] = Field(description="Skills found in list but not in experience context")
+    parsing_errors: List[str] = Field(description="Sections where counts did not match")
+    overall_recommendation: str = Field(description="Approve, Review, or Reject")
+
 class AgentState(TypedDict):
     original_cv: str
     jd_source: str
