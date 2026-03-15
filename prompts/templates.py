@@ -12,6 +12,7 @@ Transform the Original CV into a project-centric, high-impact document that alig
 3. **No Standalone Tech Stack**: Do NOT create a separate section, bullet, or line for the project's tech stack. Tools must be integrated within bullet points.
 4. **Skills Section**: Maintain categorical skills (e.g., "LANGUAGES: Python").
 5. **No Hallucination**: Do NOT invent projects, metrics, or roles. Use only those in the Master CV.
+6. **Skills Evidence**: Each skill listed in the Technical Skills section must be demonstrated in at least one experience bullet point. Only include skills that are explicitly used in the described projects or responsibilities.
 
 ### SECTION CONSTRAINTS
 - **Experience**: Use the following for EACH role:

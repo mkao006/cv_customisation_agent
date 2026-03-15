@@ -80,7 +80,7 @@ class CVAnalyzer:
         evidence = CVAnalyzer.calculate_evidence_score(cv_obj)
         
         # 3. Semantic Alignment (LLM Pass)
-        alignment_prompt = f"Score semantic alignment (1-100) of CV against JD. JD: {jd_text[:1000]} CV Summary: {cv_obj.summary}"
+        alignment_prompt = f"Score semantic alignment (1-100) of CV against JD. JD: {jd_text} CV Summary: {cv_obj.summary}"
         align_score_str = llm_client.invoke_llm(alignment_prompt, use_strong=True, config=config)
         try:
             align_score = int(re.search(r'\d+', align_score_str).group())
@@ -91,7 +91,7 @@ class CVAnalyzer:
             parsing_accuracy=parsing_acc,
             evidence_score=evidence["score"],
             alignment_score=align_score,
-            unbacked_skills=evidence["unbacked"][:15],
+            unbacked_skills=evidence["unbacked"],
             parsing_errors=[f"{s}: fail" for s in intended if intended[s] != actual[s]],
             overall_recommendation="Approve" if parsing_acc == 100 and evidence["score"] > 80 else "Review"
         )

@@ -88,7 +88,7 @@ def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_c
             ats_audit = CVAnalyzer.run_full_audit(tailored_cv, cv_md, jd_text, master_cv_text, llm_client, trace_config)
 
             # Context-Aware Judge Pass
-            judge_prompt = f"Audit keywords against Master Records. Flag tech NOT mentioned in Master. MASTER: {master_cv_text[:1500]} CV: {cv_md[:1500]}"
+            judge_prompt = f"Audit keywords against Master Records. Flag tech NOT mentioned in Master. MASTER: {master_cv_text} CV: {cv_md}"
             structured_judge = llm_client.with_structured_output(JudgeAudit, use_strong=True)
             llm_judge_data = structured_judge.invoke(judge_prompt, config=trace_config)
 

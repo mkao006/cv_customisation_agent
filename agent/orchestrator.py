@@ -128,8 +128,8 @@ class Orchestrator:
         print("--- Evaluating Research (Strong Model) ---")
         prompt = f"""
         Evaluate the following research against the requirements of the JD.
-        JD: {state['jd_text'][:500]}
-        RESEARCH: {state['company_research'][:500]}
+        JD: {state['jd_text']}
+        RESEARCH: {state['company_research']}
         Return JSON {{'evaluation': 'satisfactory'|'needs_refinement', 'gaps': 'string'}}. 
         """
         response = self.llm_client.invoke_llm(prompt, use_strong=True, config=config)
@@ -149,8 +149,8 @@ class Orchestrator:
         print("--- Synthesizing Strategy (Strong Model) ---")
         prompt = f"""
         Create a targeted resume strategy.
-        JD: {state['jd_text'][:1500]}
-        CV: {state['original_cv'][:1500]}
+        JD: {state['jd_text']}
+        CV: {state['original_cv']}
         Output a detailed strategy highlighting key keywords, cultural fit, and gaps to mitigate.
         """
         return {"application_strategy": self.llm_client.invoke_llm(prompt, use_strong=True, config=config)}

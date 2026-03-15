@@ -75,8 +75,8 @@ For skills, verify that the skill is mentioned in the source context.
         try:
             # Format the prompt
             prompt = self.FAITHFULNESS_PROMPT_TEMPLATE.format(
-                source_text=source_text[:3000],  # Limit to avoid token limits
-                generated_cv=generated_cv[:3000]
+                source_text=source_text,  # No truncation
+                generated_cv=generated_cv
             )
 
             # Get structured output
@@ -97,8 +97,8 @@ For skills, verify that the skill is mentioned in the source context.
                 faithfulness_score=0.0,
                 total_claims=0,
                 verified_claims=0,
-                hallucinations=[{"claim": "Evaluation error", "reason": f"Faithfulness evaluation failed: {str(e)[:100]}"}],
-                audit_summary=f"Faithfulness evaluation failed due to error: {str(e)[:200]}"
+                hallucinations=[{"claim": "Evaluation error", "reason": f"Faithfulness evaluation failed: {str(e)}"}],
+                audit_summary=f"Faithfulness evaluation failed due to error: {str(e)}"
             )
 
     def _parse_text_response(self, text_response: str) -> FaithfulnessAudit:
