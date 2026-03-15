@@ -9,9 +9,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from opentelemetry import trace
 from agent.orchestrator import Orchestrator
 from agent.llm_client import LLMClient
-from agent.models import JudgeAudit
+from agent.models import JudgeAudit, FaithfulnessAudit
 from tools.cv_builder import CVBuilder
 from tools.cv_analyzer import CVAnalyzer
+from tools.faithfulness_evaluator import FaithfulnessEvaluator
 from config.settings import Settings
 
 tracer = trace.get_tracer(__name__)
@@ -91,12 +92,21 @@ def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_c
             structured_judge = llm_client.with_structured_output(JudgeAudit, use_strong=True)
             llm_judge_data = structured_judge.invoke(judge_prompt, config=trace_config)
 
+            # Faithfulness Evaluation (using Gemini to avoid same-model bias)
+            faithfulness_evaluator = FaithfulnessEvaluator()
+            faithfulness_audit = faithfulness_evaluator.evaluate(
+                source_text=master_cv_text,
+                generated_cv=cv_md,
+                config=trace_config
+            )
+
             return {
                 "jd": jd_filename,
                 "yoe_audit": yoe_audit,
                 "metric_audit": metric_audit,
                 "ats_audit": ats_audit.model_dump(),
                 "llm_judge_audit": {"hallucinations": llm_judge_data.hallucinations, "count": llm_judge_data.count},
+                "faithfulness_audit": faithfulness_audit.model_dump(),
                 "overall_status": ats_audit.overall_recommendation
             }
         except Exception as e:
@@ -125,14 +135,21 @@ def run_evaluation():
             res = future.result()
             if res: results.append(res)
 
+    # Calculate faithfulness metrics
+    faithfulness_scores = [r["faithfulness_audit"]["faithfulness_score"] for r in results if "faithfulness_audit" in r]
+    avg_faithfulness = sum(faithfulness_scores) / len(faithfulness_scores) if faithfulness_scores else 0
+    faithfulness_failures = sum(1 for r in results if "faithfulness_audit" in r and r["faithfulness_audit"]["faithfulness_score"] < 98.0)
+
     summary = {
         "experiment_id": experiment_id,
         "metrics": {
             "total_jds": len(results),
             "yoe_hallucinations": sum(1 for r in results if r["yoe_audit"]["status"] == "fail"),
             "metric_hallucinations": sum(1 for r in results if r["metric_audit"]["status"] == "fail"),
+            "faithfulness_failures": faithfulness_failures,
             "avg_evidence_score": sum(r["ats_audit"]["evidence_score"] for r in results) / len(results) if results else 0,
-            "avg_alignment_score": sum(r["ats_audit"]["alignment_score"] for r in results) / len(results) if results else 0
+            "avg_alignment_score": sum(r["ats_audit"]["alignment_score"] for r in results) / len(results) if results else 0,
+            "avg_faithfulness_score": avg_faithfulness
         },
         "details": results
     }
@@ -141,15 +158,17 @@ def run_evaluation():
     print("\n" + "="*100)
     print(f"HYBRID ATS EVALUATION SUMMARY: {experiment_id}")
     print("="*100)
-    print(f"{'JD Filename':<20} | {'YoE':<5} | {'Metric':<6} | {'Evidence':<8} | {'Align':<7} | {'Status'}")
+    print(f"{'JD Filename':<20} | {'YoE':<5} | {'Metric':<6} | {'Faith':<6} | {'Evidence':<8} | {'Align':<7} | {'Status'}")
     print("-" * 100)
     for r in results:
         yoe = "FAIL" if r["yoe_audit"]["status"] == "fail" else "PASS"
         metric = "FAIL" if r["metric_audit"]["status"] == "fail" else "PASS"
         a = r["ats_audit"]
-        print(f"{r['jd']:<20} | {yoe:<5} | {metric:<6} | {a['evidence_score']:<8.0f} | {a['alignment_score']:<7} | {r['overall_status']}")
+        faith_score = r.get("faithfulness_audit", {}).get("faithfulness_score", 0.0)
+        faith_str = f"{faith_score:.0f}" if faith_score >= 0 else "N/A"
+        print(f"{r['jd']:<20} | {yoe:<5} | {metric:<6} | {faith_str:<6} | {a['evidence_score']:<8.0f} | {a['alignment_score']:<7} | {r['overall_status']}")
     print("-" * 100)
-    print(f"AVG EVIDENCE: {summary['metrics']['avg_evidence_score']:.1f}%  |  AVG ALIGNMENT: {summary['metrics']['avg_alignment_score']:.1f}%")
+    print(f"AVG EVIDENCE: {summary['metrics']['avg_evidence_score']:.1f}%  |  AVG ALIGNMENT: {summary['metrics']['avg_alignment_score']:.1f}%  |  AVG FAITHFULNESS: {summary['metrics']['avg_faithfulness_score']:.1f}%")
     print("="*100)
 
     with open(os.path.join(experiment_dir, "experiment_results.json"), "w") as f: json.dump(summary, f, indent=4)

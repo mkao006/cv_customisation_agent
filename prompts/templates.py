@@ -8,8 +8,8 @@ Transform the Original CV into a project-centric, high-impact document that alig
 1. **Reverse Chronological Order**: Sorted with the most recent role first (e.g., April 2024 role before June 2021).
 2. **Project Highlight Format**:
    - If a project exists, provide 2-3 bullet points of achievements.
-   - Immediately following the last bullet point, add a line: "Tech Stack: [tool1], [tool2], ..."
-3. **No Standalone Tech Stack**: Do NOT create a separate section or bullet for the project's tech stack. It must be a single line following the project bullets.
+   - Include relevant tools and technologies within each bullet point.
+3. **No Standalone Tech Stack**: Do NOT create a separate section, bullet, or line for the project's tech stack. Tools must be integrated within bullet points.
 4. **Skills Section**: Maintain categorical skills (e.g., "LANGUAGES: Python").
 5. **No Hallucination**: Do NOT invent projects, metrics, or roles. Use only those in the Master CV.
 
@@ -17,7 +17,7 @@ Transform the Original CV into a project-centric, high-impact document that alig
 - **Experience**: Use the following for EACH role:
    a. **Role Summary**: One-liner scope.
    b. **Project Highlight**: Bulleted achievements from Master CV.
-   c. **Technical Stack**: A single string starting with "Tech Stack: ..."
+   c. **Technical Stack**: A single string starting with "Tech Stack: ..." summarizing tools used (used for evaluation only).
 
 ### INPUTS
 1. **APPLICATION STRATEGY**: 

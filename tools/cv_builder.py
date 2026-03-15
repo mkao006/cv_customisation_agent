@@ -20,7 +20,6 @@ class CVBuilder:
                 h3 {{ font-size: 10.5pt; font-weight: bold; color: #2c3e50; margin-top: 6px; margin-bottom: 1px; }}
                 p, li {{ text-align: justify; margin-top: 0; margin-bottom: 3pt; }}
                 .role-line {{ font-style: italic; color: #555; margin-bottom: 4px; display: block; }}
-                .tech-stack-line {{ font-size: 9pt; color: #555; margin-top: 2px; margin-left: 18pt; }}
                 ul {{ margin-top: 2px; margin-bottom: 2px; padding-left: 18pt; }}
                 li {{ margin-bottom: 1pt; }}
                 a {{ color: #999; text-decoration: none; }}
@@ -56,9 +55,6 @@ class CVBuilder:
                     clean_bullet = bullet.strip().lstrip("-*•").strip()
                     md += f"- {clean_bullet}\n"
                 
-                if exp.technical_stack:
-                    # Render tech stack as a sub-text line rather than a bullet
-                    md += f"\n<div class='tech-stack-line'>{exp.technical_stack}</div>\n"
                 md += "\n"
             
         md += "## Education\n"
