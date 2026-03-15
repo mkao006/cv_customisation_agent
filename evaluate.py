@@ -9,10 +9,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from opentelemetry import trace
 from agent.orchestrator import Orchestrator
 from agent.llm_client import LLMClient
-from agent.models import JudgeAudit, FaithfulnessAudit
 from tools.cv_builder import CVBuilder
-from tools.cv_analyzer import CVAnalyzer
-from tools.faithfulness_evaluator import FaithfulnessEvaluator
+from evaluation import CVAnalyzer, FaithfulnessEvaluator
+from evaluation.models import JudgeAudit, FaithfulnessAudit
+from evaluation.utils import (
+    clean_text,
+    is_exact_match,
+    check_yoe_hallucination,
+    check_metric_hallucination
+)
 from config.settings import Settings
 
 tracer = trace.get_tracer(__name__)
@@ -22,36 +27,6 @@ def get_git_revision_hash() -> str:
     try: return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
     except Exception: return "no-git"
 
-def clean_text(text):
-    return re.sub(r'\s+', ' ', str(text).lower()).strip()
-
-def is_exact_match(keyword, master_text):
-    kw = clean_text(keyword)
-    pattern = rf"\b{re.escape(kw)}\b"
-    return re.search(pattern, master_text) is not None
-
-def check_yoe_hallucination(cv_text, start_year=2010):
-    current_year = datetime.now().year
-    ground_truth_yoe = current_year - start_year
-    yoe_patterns = [r"(\d+)\+?\s*(?:years?|yrs)(?:\s+of)?\s+(?:experience|exp)", r"(?:with|over)\s+(\d+)\+?\s*(?:years?|yrs)"]
-    mentions = []
-    for pattern in yoe_patterns:
-        found = re.findall(pattern, cv_text, re.IGNORECASE)
-        mentions.extend([int(m) for m in found])
-    if not mentions: return {"status": "pass", "message": "No YoE mentions found.", "ground_truth": ground_truth_yoe}
-    max_mentioned = max(mentions)
-    if max_mentioned > ground_truth_yoe:
-        return {"status": "fail", "message": f"YoE Hallucination: Claims {max_mentioned}, truth {ground_truth_yoe}.", "ground_truth": ground_truth_yoe, "claimed": max_mentioned}
-    return {"status": "pass", "message": "YoE within bounds.", "ground_truth": ground_truth_yoe}
-
-def check_metric_hallucination(cv_text, master_text):
-    metric_pattern = r"(\d+(?:\.\d+)?%|\$\d+(?:\.\d+)?[MBKk]?|\d+\s*(?:hour|min|sec|day)s?)"
-    cv_metrics = set(re.findall(metric_pattern, cv_text, re.IGNORECASE))
-    master_metrics = set(re.findall(metric_pattern, master_text, re.IGNORECASE))
-    hallucinated_metrics = [m for m in cv_metrics if m not in master_metrics]
-    if hallucinated_metrics:
-        return {"status": "fail", "message": f"Metric Hallucination: {hallucinated_metrics}"}
-    return {"status": "pass", "message": "No invented metrics found."}
 
 def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_cv_text, normalized_master, orchestrator, llm_client):
     jd_filename = os.path.basename(jd_file)
