@@ -128,17 +128,9 @@ class Orchestrator:
         print("--- Evaluating Research (Strong Model) ---")
         prompt = f"""
         Evaluate the following research against the requirements of the JD.
-        
-        JD:
-        {state['jd_text']}
-        
-        RESEARCH:
-        {state['company_research']}
-        {state['best_practices_research']}
-        {state['competing_candidates_research']}
-        
+        JD: {state['jd_text'][:500]}
+        RESEARCH: {state['company_research'][:500]}
         Return JSON {{'evaluation': 'satisfactory'|'needs_refinement', 'gaps': 'string'}}. 
-        Only identify gaps if critical information about company goals or role-specific skills is missing.
         """
         response = self.llm_client.invoke_llm(prompt, use_strong=True, config=config)
         try:
@@ -157,18 +149,8 @@ class Orchestrator:
         print("--- Synthesizing Strategy (Strong Model) ---")
         prompt = f"""
         Create a targeted resume strategy.
-        
-        JD:
-        {state['jd_text']}
-        
-        RESEARCH:
-        {state['company_research']}
-        {state['best_practices_research']}
-        {state['competing_candidates_research']}
-        
-        CV:
-        {state['original_cv']}
-        
+        JD: {state['jd_text'][:1500]}
+        CV: {state['original_cv'][:1500]}
         Output a detailed strategy highlighting key keywords, cultural fit, and gaps to mitigate.
         """
         return {"application_strategy": self.llm_client.invoke_llm(prompt, use_strong=True, config=config)}
@@ -204,7 +186,7 @@ class Orchestrator:
         TASK:
         1. Identify any specific tools, skills, or achievements in the Tailored CV that are NOT supported by the Master CV.
         2. CRITICAL: Identify any numerical metrics (%, $, time units, counts) in the Tailored CV that do not appear in the Master CV.
-        3. REMOVE or REPLACE any hallucinated tools OR invented numerical metrics. If a percentage like '20%' is not in the Master CV, remove it.
+        3. REMOVE or REPLACE any hallucinated tools OR invented numerical metrics.
         4. Do NOT remove common industry terminology that describes general tasks related to the user's role.
         
         Final Output must be a valid JSON matching the CV schema.

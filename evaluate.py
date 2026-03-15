@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from opentelemetry import trace
 from agent.orchestrator import Orchestrator
 from agent.llm_client import LLMClient
+from agent.models import JudgeAudit
 from tools.cv_builder import CVBuilder
 from tools.cv_analyzer import CVAnalyzer
 from config.settings import Settings
@@ -48,7 +49,7 @@ def check_metric_hallucination(cv_text, master_text):
     master_metrics = set(re.findall(metric_pattern, master_text, re.IGNORECASE))
     hallucinated_metrics = [m for m in cv_metrics if m not in master_metrics]
     if hallucinated_metrics:
-        return {"status": "fail", "message": f"Metric Hallucination: {hallucinated_metrics}", "hallucinations": hallucinated_metrics}
+        return {"status": "fail", "message": f"Metric Hallucination: {hallucinated_metrics}"}
     return {"status": "pass", "message": "No invented metrics found."}
 
 def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_cv_text, normalized_master, orchestrator, llm_client):
@@ -68,7 +69,7 @@ def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_c
                 "original_cv": master_cv_path, "jd_source": jd_file, "jd_text": "", "jd_validation_error": None,
                 "research_iteration": 0, "max_research_iterations": 1, "research_gaps": "",
                 "company_research": "", "best_practices_research": "", "competing_candidates_research": "",
-                "application_strategy": "", "personalization_instructions": "STRICT ADHERENCE TO MASTER CV METRICS.",
+                "application_strategy": "", "personalization_instructions": "STRICT ADHERENCE TO MASTER CV RECORDS.",
                 "final_ats_cv": None
             })
             tailored_cv = final_state.get("final_ats_cv")
@@ -80,18 +81,22 @@ def evaluate_jd(jd_file, experiment_id, experiment_dir, master_cv_path, master_c
             with open(os.path.join(jd_output_dir, "TAILORED_CV.md"), "w") as f: f.write(cv_md)
             CVBuilder.render_pdf(cv_md, os.path.join(jd_output_dir, "TAILORED_CV.pdf"))
 
-            # 1. Hallucination Audits
+            # Audits
             yoe_audit = check_yoe_hallucination(cv_md)
             metric_audit = check_metric_hallucination(cv_md, master_cv_text)
+            ats_audit = CVAnalyzer.run_full_audit(tailored_cv, cv_md, jd_text, master_cv_text, llm_client, trace_config)
 
-            # 2. Deterministic & Hybrid Audit
-            ats_audit = CVAnalyzer.run_full_audit(tailored_cv, cv_md, jd_text, llm_client, trace_config)
+            # Context-Aware Judge Pass
+            judge_prompt = f"Audit keywords against Master Records. Flag tech NOT mentioned in Master. MASTER: {master_cv_text[:1500]} CV: {cv_md[:1500]}"
+            structured_judge = llm_client.with_structured_output(JudgeAudit, use_strong=True)
+            llm_judge_data = structured_judge.invoke(judge_prompt, config=trace_config)
 
             return {
                 "jd": jd_filename,
                 "yoe_audit": yoe_audit,
                 "metric_audit": metric_audit,
                 "ats_audit": ats_audit.model_dump(),
+                "llm_judge_audit": {"hallucinations": llm_judge_data.hallucinations, "count": llm_judge_data.count},
                 "overall_status": ats_audit.overall_recommendation
             }
         except Exception as e:
@@ -126,26 +131,26 @@ def run_evaluation():
             "total_jds": len(results),
             "yoe_hallucinations": sum(1 for r in results if r["yoe_audit"]["status"] == "fail"),
             "metric_hallucinations": sum(1 for r in results if r["metric_audit"]["status"] == "fail"),
-            "avg_parsing_acc": sum(r["ats_audit"]["parsing_accuracy"] for r in results) / len(results) if results else 0,
-            "avg_evidence_score": sum(r["ats_audit"]["evidence_score"] for r in results) / len(results) if results else 0
+            "avg_evidence_score": sum(r["ats_audit"]["evidence_score"] for r in results) / len(results) if results else 0,
+            "avg_alignment_score": sum(r["ats_audit"]["alignment_score"] for r in results) / len(results) if results else 0
         },
         "details": results
     }
 
     # PRINT SUMMARY TABLE
-    print("\n" + "="*95)
+    print("\n" + "="*100)
     print(f"HYBRID ATS EVALUATION SUMMARY: {experiment_id}")
-    print("="*95)
-    print(f"{'JD Filename':<20} | {'YoE':<5} | {'Metric':<6} | {'Parse Acc':<9} | {'Evidence':<8} | {'Alignment':<7} | {'Status'}")
-    print("-" * 95)
+    print("="*100)
+    print(f"{'JD Filename':<20} | {'YoE':<5} | {'Metric':<6} | {'Evidence':<8} | {'Align':<7} | {'Status'}")
+    print("-" * 100)
     for r in results:
         yoe = "FAIL" if r["yoe_audit"]["status"] == "fail" else "PASS"
         metric = "FAIL" if r["metric_audit"]["status"] == "fail" else "PASS"
         a = r["ats_audit"]
-        print(f"{r['jd']:<20} | {yoe:<5} | {metric:<6} | {a['parsing_accuracy']:<9.0f} | {a['evidence_score']:<8.0f} | {a['alignment_score']:<7} | {r['overall_status']}")
-    print("-" * 95)
-    print(f"AVG PARSING: {summary['metrics']['avg_parsing_acc']:.1f}%  |  AVG EVIDENCE: {summary['metrics']['avg_evidence_score']:.1f}%")
-    print("="*95)
+        print(f"{r['jd']:<20} | {yoe:<5} | {metric:<6} | {a['evidence_score']:<8.0f} | {a['alignment_score']:<7} | {r['overall_status']}")
+    print("-" * 100)
+    print(f"AVG EVIDENCE: {summary['metrics']['avg_evidence_score']:.1f}%  |  AVG ALIGNMENT: {summary['metrics']['avg_alignment_score']:.1f}%")
+    print("="*100)
 
     with open(os.path.join(experiment_dir, "experiment_results.json"), "w") as f: json.dump(summary, f, indent=4)
     print(f"Artifacts: {experiment_dir}\n")

@@ -1,40 +1,37 @@
 CV_GENERATION_TEMPLATE = """
-Rewrite the CV based on the Strategy, Job Description, and specific Personalization Instructions.
+Rewrite the CV based on the Strategy, Job Description, and Personalization Instructions.
 
 ### OBJECTIVE
-Transform the Original CV into a highly optimized, ATS-friendly document that aligns with the JD while adhering to the Research Strategy.
+Transform the Original CV into a project-centric, high-impact document that aligns with the JD.
 
-### MANDATORY GUIDELINES: STRUCTURAL INTEGRITY & ATS COMPATIBILITY
-1. **Format & Layout**: Use a clean, single-column layout. Do not suggest or include any tables, graphics, or icons.
-2. **Contact Professionalism**: Start the CV with a concise contact line including:
-   - Professional Email
-   - Customized LinkedIn URL
-   - Technical Portfolio links (GitHub, Kaggle, or Google Scholar)
-   These should be clearly visible at the top.
-3. **Brevity**: Ensure the total length is appropriate for a Senior Engineer (maximum 2 pages). Be concise but impactful.
-4. **Reverse Chronological Order**: The **Work Experience** section MUST be sorted with the most recent role first.
-5. **No Metric Hallucination**: DO NOT invent, hallucinate, or estimate any numerical metrics (%, $, time) not in the Original CV.
-
-### INPUTS
-1. **APPLICATION STRATEGY**:
-{strategy}
-
-2. **ORIGINAL CV**:
-{original_cv}
-
-3. **JOB DESCRIPTION**:
-{jd_text}
-
-4. **USER PERSONALIZATION INSTRUCTIONS**:
-{personalization_instructions}
+### MANDATORY RULES
+1. **Reverse Chronological Order**: Sorted with the most recent role first (e.g., April 2024 role before June 2021).
+2. **Project Highlight Format**:
+   - If a project exists, provide 2-3 bullet points of achievements.
+   - Immediately following the last bullet point, add a line: "Tech Stack: [tool1], [tool2], ..."
+3. **No Standalone Tech Stack**: Do NOT create a separate section or bullet for the project's tech stack. It must be a single line following the project bullets.
+4. **Skills Section**: Maintain categorical skills (e.g., "LANGUAGES: Python").
+5. **No Hallucination**: Do NOT invent projects, metrics, or roles. Use only those in the Master CV.
 
 ### SECTION CONSTRAINTS
-- **Headers**: Use standard headers only: "Professional Summary", "Work Experience", "Education", "Skills".
-- **Summary**: 3-4 sentence professional summary tailored to this specific role.
-- **Experience**: Rewrite bullet points to be achievement-oriented (Action Verb + Task + Result).
-- **Skills**: Group technical skills into logical categories (e.g., "LANGUAGES: Python, R"). 
+- **Experience**: Use the following for EACH role:
+   a. **Role Summary**: One-liner scope.
+   b. **Project Highlight**: Bulleted achievements from Master CV.
+   c. **Technical Stack**: A single string starting with "Tech Stack: ..."
+
+### INPUTS
+1. **APPLICATION STRATEGY**: 
+{strategy}
+
+2. **ORIGINAL CV (Source of Truth)**: 
+{original_cv}
+
+3. **JOB DESCRIPTION**: 
+{jd_text}
+
+4. **USER PERSONALIZATION INSTRUCTIONS**: 
+{personalization_instructions}
 
 ### OUTPUT
-Return a valid JSON object matching the requested schema (Summary, Experience, Skills, Education). 
-Ensure the contact info is included at the very beginning of the 'Summary' string if not handled elsewhere.
+Return a valid JSON object matching the requested schema.
 """
